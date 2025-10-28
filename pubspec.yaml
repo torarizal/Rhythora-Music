@@ -31,9 +31,32 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  # 1. Inti dari BLoC/Cubit
+  flutter_bloc: ^8.1.5 # (Gunakan versi terbaru)
+  
+  # 2. Untuk membandingkan State (seperti di player_state.dart)
+  equatable: ^2.0.5 # (Gunakan versi terbaru)
+
+  # 3. Untuk memanggil Spotify Web API (di SpotifyService)
+  http: ^1.2.1 # (Gunakan versi terbaru)
+  
+  # 4. Untuk memutar musik (Premium) & Autentikasi Native
+  spotify_sdk: ^2.4.1 # (Gunakan versi terbaru)
+  
+  # 5. Untuk menyimpan Token (Access & Refresh Token)
+  flutter_secure_storage: ^9.2.2 # (Gunakan versi terbaru)
+
+  # 6. (Opsional tapi Sangat Direkomendasikan) Untuk memutar preview_url 30 detik
+  just_audio: ^0.9.36 # (Gunakan versi terbaru)
+
+  # ... package lain yang mungkin sudah Anda miliki
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  flutter_lints: ^4.0.0
 
 dev_dependencies:
   flutter_test:
