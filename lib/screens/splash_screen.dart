@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen> {
         MaterialPageRoute(
           // TODO: Ganti SimpleHomeScreen() dengan halaman utama
           // aplikasi film Anda, misalnya MovieHomeScreen()
-          builder: (context) => const TempHomeScreen(),
+          builder: (context) => const HomeScreen(),
         ),
       );
     }
