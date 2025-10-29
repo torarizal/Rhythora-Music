@@ -31,43 +31,33 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # 1. Inti dari BLoC/Cubit
-  flutter_bloc: ^8.1.5 # (Gunakan versi terbaru)
-  
-  # 2. Untuk membandingkan State (seperti di player_state.dart)
+
+  flutter_bloc: ^9.1.1 # (Gunakan versi terbaru)
   equatable: ^2.0.5 # (Gunakan versi terbaru)
-
-  # 3. Untuk memanggil Spotify Web API (di SpotifyService)
   http: ^1.2.1 # (Gunakan versi terbaru)
-  
-  # 4. Untuk memutar musik (Premium) & Autentikasi Native
-  spotify_sdk: ^2.4.1 # (Gunakan versi terbaru)
-  
-  # 5. Untuk menyimpan Token (Access & Refresh Token)
-  flutter_secure_storage: ^9.2.2 # (Gunakan versi terbaru)
-
-  # 6. (Opsional tapi Sangat Direkomendasikan) Untuk memutar preview_url 30 detik
-  just_audio: ^0.9.36 # (Gunakan versi terbaru)
-
-  # ... package lain yang mungkin sudah Anda miliki
+  spotify_sdk: ^3.0.2 # (Gunakan versi terbaru)
+  flutter_secure_storage: ^10.0.0-beta.4 # (Gunakan versi terbaru)
+  just_audio: ^0.10.5 # (Gunakan versi terbaru)
   cupertino_icons: ^1.0.6
+  lucide_flutter: ^0.548.0
+  carousel_slider: ^5.1.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
 
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
 
+
+dependency_overrides:
+  flutter_lints: ^6.0.0
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+ 
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
