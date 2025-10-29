@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'home_screen.dart'; 
+import 'package:rhythora/screens/login_screen.dart';
+
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -24,9 +25,9 @@ class _SplashScreenState extends State<SplashScreen> {
       // ke splash screen ini.
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          // TODO: Ganti SimpleHomeScreen() dengan halaman utama
+          
           // aplikasi film Anda, misalnya MovieHomeScreen()
-          builder: (context) => const HomeScreen(),
+          builder: (context) => const LoginScreen(),
         ),
       );
     }

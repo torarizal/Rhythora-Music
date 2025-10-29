@@ -1,709 +1,790 @@
-// home_screen.dart
-import 'dart:ui'; // Diperlukan untuk ImageFilter.blur
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:carousel_slider/carousel_slider.dart'; // Import carousel_slider
+// Import Cubit, State, Model
+import '../state/search_cubit.dart';
+import '../state/search_state.dart';
+import '../state/player_cubit.dart';
+import '../state/player_state.dart';
+import '../models/track_model.dart';
+import '../services/spotify_service.dart'; // Perlu ini untuk ambil rekomendasi
 
-// --- DEFINISI WARNA (Meniru Tailwind) ---
-const Color kBackgroundColor = Color(0xFF111827); // gray-900
-const Color kCardColor = Color(0xFF1F2937); // gray-800
-const Color kFooterColor = Color(0xFF030712); // gray-950
-const Color kPrimaryRed = Color(0xFFDC2626); // red-600
-const Color kPrimaryRedHover = Color(0xFFB91C1C); // red-700
-const Color kPrimaryText = Color(0xFFF9FAFB); // gray-100
-const Color kSecondaryText = Color(0xFF9CA3AF); // gray-400
+// --- WARNA DARI UI BARU ANDA ---
+const Color kBackgroundColor = Color(0xFF121212); // Latar belakang umum
+const Color kSidebarColor = Colors.black;
+const Color kContentBackgroundColor = Color(0xFF18181B); // Mirip zinc-900
+const Color kCardHoverColor = Color(0xFF27272A); // Mirip zinc-800 (Untuk hover & NavItem aktif)
+const Color kBorderColor = Color(0xFF3F3F46); // Mirip zinc-700 (Untuk divider & border)
+const Color kMutedTextColor = Color(0xFFA1A1AA); // Mirip zinc-400 (Teks sekunder)
+const Color kBannerGradientStart = Color(0xFF4c1d95); // purple-800
+const Color kBannerGradientEnd = Color(0x80440C79); // purple-900/50 (dengan transparansi)
+const Color kBannerTextColor = Color(0xFFd8b4fe); // purple-200
+const Color kPlayerBarBackgroundColor = kContentBackgroundColor; // Samakan dengan konten utama
+// ---------------------------------
 
-// --- MODEL DATA (untuk menampung data dari API Anda) ---
-class Movie {
-  final String id;
-  final String title;
-  final String year;
-  final double rating;
-  final String posterUrl;
 
-  Movie({
-    required this.id,
-    required this.title,
-    required this.year,
-    required this.rating,
-    required this.posterUrl,
-  });
-}
-
-// --- DATA DUMMY (Ganti ini dengan panggilan API Anda) ---
-final Movie dummyHeroMovie = Movie(
-  id: "1",
-  title: "Judul Film Unggulan dari API",
-  year: "2025",
-  rating: 9.0,
-  posterUrl: "https://placehold.co/1600x900/2c2c2c/FFF?text=Hero+dari+API",
-);
-
-final List<Movie> dummyNowPlaying = [
-  Movie(
-    id: "2",
-    title: "Film Tayang Satu",
-    year: "2025",
-    rating: 9.1,
-    posterUrl: "https://placehold.co/300x450/2a2a2a/FFF?text=API+1",
-  ),
-  Movie(
-    id: "3",
-    title: "Film Tayang Dua",
-    year: "2025",
-    rating: 8.5,
-    posterUrl: "https://placehold.co/300x450/3a3a3a/FFF?text=API+2",
-  ),
-  Movie(
-    id: "4",
-    title: "Film Tayang Tiga",
-    year: "2025",
-    rating: 8.2,
-    posterUrl: "https://placehold.co/300x450/4a4a4a/FFF?text=API+3",
-  ),
-  Movie(
-    id: "5",
-    title: "Film Tayang Empat",
-    year: "2025",
-    rating: 8.0,
-    posterUrl: "https://placehold.co/300x450/5a5a5a/FFF?text=API+4",
-  ),
-  Movie(
-    id: "6",
-    title: "Film Tayang Lima",
-    year: "2024",
-    rating: 7.9,
-    posterUrl: "https://placehold.co/300x450/6a6a6a/FFF?text=API+5",
-  ),
-  Movie(
-    id: "7",
-    title: "Film Tayang Enam",
-    year: "2024",
-    rating: 7.8,
-    posterUrl: "https://placehold.co/300x450/7a7a7a/FFF?text=API+6",
-  ),
-];
-
-final List<Movie> dummyPopular = [
-  Movie(
-    id: "8",
-    title: "Film Populer Satu",
-    year: "2024",
-    rating: 9.8,
-    posterUrl: "https://placehold.co/300x450/8a8a8a/FFF?text=API+7",
-  ),
-  Movie(
-    id: "9",
-    title: "Film Populer Dua",
-    year: "2023",
-    rating: 9.5,
-    posterUrl: "https://placehold.co/300x450/9a9a9a/FFF?text=API+8",
-  ),
-  Movie(
-    id: "10",
-    title: "Film Populer Tiga",
-    year: "2023",
-    rating: 9.2,
-    posterUrl: "https://placehold.co/300x450/aaaaaa/FFF?text=API+9",
-  ),
-];
-
-// --- WIDGET UTAMA (HOME SCREEN) ---
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
-
-  @override
-  _HomeScreenState createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final ScrollController _scrollController = ScrollController();
-  double _scrollOffset = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    setState(() {
-      _scrollOffset = _scrollController.offset;
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Scaffold utama yang mengatur layout dasar
     return Scaffold(
-      backgroundColor: kBackgroundColor,
-      // endDrawer digunakan untuk menu mobile
-      endDrawer: _buildMobileDrawer(),
-      body: Stack(
-        children: [
-          // 1. Konten Utama (Bisa di-scroll)
-          _buildContent(),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Tampilan Desktop (Sidebar Tetap)
+          if (constraints.maxWidth > 1024) {
+            return Row(
+              children: [
+                const SizedBox(
+                  width: 256, // Lebar sidebar desktop
+                  child: AppSidebar(),
+                ),
+                Expanded(
+                  child: MainContent(), // Konten utama bisa scroll
+                ),
+              ],
+            );
+          }
+          // Tampilan Mobile (Sidebar di Drawer)
+          else {
+            return Scaffold(
+              drawer: const Drawer(
+                // Gunakan AppSidebar yang sama untuk konsistensi
+                child: AppSidebar(),
+              ),
+              appBar: AppBar(
+                title: const Text('Rhythora'), // Ganti judul jika perlu
+                backgroundColor: kSidebarColor,
+                elevation: 0,
+              ),
+              body: MainContent(), // Konten utama
+            );
+          }
+        },
+      ),
+      // --- PEMUTAR MUSIK DI BAWAH ---
+      // Player bar akan selalu ada di bawah, terlepas dari layout
+      bottomNavigationBar: const _MusicPlayerBar(),
+      // -----------------------------
+    );
+  }
+}
 
-          // 2. App Bar (Efek blur saat scroll)
-          _buildBlurredAppBar(),
+// ===== WIDGET SIDEBAR =====
+class AppSidebar extends StatelessWidget {
+  const AppSidebar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: kSidebarColor, // Latar belakang sidebar
+      padding: const EdgeInsets.all(24.0), // Padding
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Logo atau Nama Web
+          const Text(
+            'Rhythora',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Navigasi Utama
+          const NavItem(
+            icon: Icons.home_filled,
+            title: 'Beranda',
+            isActive: true, // Item Beranda aktif
+          ),
+          const SizedBox(height: 8),
+          const NavItem(
+            icon: Icons.search,
+            title: 'Cari',
+          ),
+          const SizedBox(height: 8),
+          const NavItem(
+            icon: Icons.library_music,
+            title: 'Koleksi Kamu',
+          ),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24.0),
+            child: Divider(color: kBorderColor), // Garis pemisah
+          ),
+
+          // --- Daftar Putar (Hapus Dummy) ---
+          const Text(
+            'Daftar Putar',
+            style: TextStyle(
+              color: kMutedTextColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 16
+            ),
+          ),
+          const SizedBox(height: 16),
+          // TODO: Ganti dengan BlocBuilder<PlaylistCubit, PlaylistState>
+          Expanded(
+            child: ListView(
+              shrinkWrap: true,
+              children: const [
+                 Padding( // Contoh item playlist
+                   padding: EdgeInsets.symmetric(vertical: 6.0),
+                   child: Text('Lagu Favorit', style: TextStyle(color: kMutedTextColor)),
+                 ),
+                 Padding(
+                   padding: EdgeInsets.symmetric(vertical: 6.0),
+                   child: Text('Mix Harian 1', style: TextStyle(color: kMutedTextColor)),
+                 ),
+                 // ... tambahkan item lain jika perlu
+              ],
+            ),
+          ),
+          // ------------------------------------
         ],
       ),
     );
   }
+}
 
-  // --- WIDGET APP BAR DENGAN EFEK "WOW" ---
-  Widget _buildBlurredAppBar() {
-    // Tentukan opasitas berdasarkan seberapa jauh di-scroll
-    // Akan full opacity setelah scroll 100 pixels
-    double opacity = (_scrollOffset / 100).clamp(0.0, 1.0);
+// Widget untuk item navigasi di sidebar
+class NavItem extends StatelessWidget {
+  const NavItem({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.isActive = false,
+  });
 
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: ClipRect(
-        child: BackdropFilter(
-          // Efek blur (mirip backdrop-blur-md)
-          filter: ImageFilter.blur(sigmaX: opacity * 10, sigmaY: opacity * 10),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 12.0,
+  final IconData icon;
+  final String title;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? Colors.white : kMutedTextColor; // Tentukan warna
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: isActive ? kCardHoverColor : Colors.transparent, // Latar belakang jika aktif
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 16),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
             ),
-            // Latar belakang (mirip bg-gray-900/80)
-            color: kBackgroundColor.withOpacity(opacity * 0.8),
-            child: SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  // Cek lebar layar untuk layout responsif
-                  if (constraints.maxWidth > 768) {
-                    return _buildDesktopNav(); // Tampilan Desktop
-                  } else {
-                    return _buildMobileNav(); // Tampilan Mobile
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===== WIDGET KONTEN UTAMA =====
+class MainContent extends StatefulWidget {
+   MainContent({super.key});
+
+  @override
+  State<MainContent> createState() => _MainContentState();
+}
+
+class _MainContentState extends State<MainContent> {
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  List<Track> _trendingTracks = []; // Untuk data slider
+  List<Track> _homeRecommendations = [];
+  bool _isLoadingHome = true;
+  String? _homeError;
+
+ @override
+  void initState() {
+    super.initState();
+    _loadHomeRecommendations();
+  }
+
+ @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadHomeRecommendations() async {
+    setState(() {
+      _isLoadingHome = true;
+      _homeError = null;
+    });
+    try {
+      // Pastikan context masih valid sebelum memanggil RepositoryProvider
+      if (!mounted) return;
+      final spotifyService = RepositoryProvider.of<SpotifyService>(context);
+      final List<Track> fetchedTrending = await spotifyService.searchTracks('trending songs indonesia');
+      final List<Track> recommendedTracks = await spotifyService.searchTracks('new releases indonesia');
+
+       // Pastikan widget masih mounted sebelum setState
+      if (mounted) {
+        setState(() {
+          _homeRecommendations = recommendedTracks;
+          _trendingTracks = fetchedTrending.take(5).toList();
+          _isLoadingHome = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading home recommendations: $e");
+       if (mounted) {
+        setState(() {
+          _homeError = "Gagal memuat rekomendasi."; // Pesan lebih singkat
+          _isLoadingHome = false;
+        });
+       }
+    }
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: kContentBackgroundColor,
+      child: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          SliverAppBar(
+            backgroundColor: kContentBackgroundColor,
+            pinned: false,
+            floating: true,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            titleSpacing: 0,
+            title: Padding(
+              padding: const EdgeInsets.fromLTRB(32, 24, 32, 16),
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Cari lagu atau artis...',
+                  hintStyle: const TextStyle(color: kMutedTextColor),
+                  prefixIcon: const Icon(Icons.search, color: kMutedTextColor),
+                  filled: true,
+                  fillColor: kCardHoverColor,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onSubmitted: (query) {
+                  if (query.isNotEmpty) {
+                    debugPrint("HomeScreen: Memanggil SearchCubit.searchTracks dengan query: $query");
+                    // Pastikan context tersedia sebelum memanggil read
+                    if (mounted) {
+                       context.read<SearchCubit>().searchTracks(query);
+                    }
                   }
                 },
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
 
-  // Navigasi versi Desktop (mirip md:flex)
-  Widget _buildDesktopNav() {
-    return Row(
-      children: [
-        const Text(
-          "MOVIELIX",
-          style: TextStyle(
-            color: kPrimaryRed,
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
+          BlocBuilder<SearchCubit, SearchState>(
+            builder: (context, state) {
+              if (state is SearchLoading || state is SearchLoaded || state is SearchError) {
+                 return SliverPadding(
+                   padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                   sliver: _buildSearchResults(state),
+                 );
+              }
+
+              // KONDISI AWAL (SearchInitial) - Tampilkan konten default (Home Page)
+               return SliverList(
+                  delegate: SliverChildListDelegate(
+                    [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 32.0),
+                        child: _isLoadingHome
+                          ? const SizedBox(height: 250, child: Center(child: CircularProgressIndicator(color: Colors.green)))
+                          : _homeError != null // Tampilkan error jika ada
+                              ? SizedBox(height: 250, child: Center(child: Text(_homeError!, style: const TextStyle(color: Colors.red))))
+                              : _trendingTracks.isEmpty
+                                  ? const SizedBox(height: 250, child: Center(child: Text("Tidak ada lagu trending.", style: TextStyle(color: kMutedTextColor))))
+                                  : CarouselSlider.builder(
+                                      options: CarouselOptions(
+                                        height: 250.0,
+                                        autoPlay: true,
+                                        enlargeCenterPage: true,
+                                        viewportFraction: 0.8,
+                                        autoPlayInterval: const Duration(seconds: 5),
+                                      ),
+                                      itemCount: _trendingTracks.length,
+                                      itemBuilder: (context, itemIndex, pageViewIndex) {
+                                        final track = _trendingTracks[itemIndex];
+                                        return InkWell(
+                                           onTap: () {
+                                              if (mounted) { // Pastikan context valid
+                                                 context.read<PlayerCubit>().play(track);
+                                              }
+                                           },
+                                          child: Container(
+                                            width: MediaQuery.of(context).size.width,
+                                            margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[800],
+                                              borderRadius: BorderRadius.circular(12),
+                                              image: track.albumImageUrl != null
+                                                ? DecorationImage(
+                                                    image: NetworkImage(track.albumImageUrl!),
+                                                    fit: BoxFit.cover,
+                                                    colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.5), BlendMode.darken)
+                                                  )
+                                                : null,
+                                              gradient: track.albumImageUrl == null
+                                                ? const LinearGradient(
+                                                    colors: [kBannerGradientStart, kBannerGradientEnd],
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                  )
+                                                : null,
+                                            ),
+                                            child: Stack(
+                                               children: [
+                                                  if (track.albumImageUrl == null)
+                                                     Center(child: Icon(Icons.music_note, color: kMutedTextColor.withOpacity(0.5), size: 80)),
+                                                  Positioned(
+                                                    bottom: 16,
+                                                    left: 16,
+                                                    right: 16,
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                         Text(
+                                                          track.name,
+                                                          style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(blurRadius: 2)]),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                         Text(
+                                                          track.artistName,
+                                                          style: TextStyle(fontSize: 14.0, color: Colors.grey[300], shadows: const [Shadow(blurRadius: 1)]),
+                                                           maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                               ]
+                                             ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Rilis Baru',
+                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: Colors.white),
+                            ),
+                            const SizedBox(height: 20),
+                            _isLoadingHome
+                                ? const Center(child: CircularProgressIndicator(color: Colors.green))
+                                : _homeError != null
+                                    ? Center(child: Text(_homeError!, style: const TextStyle(color: Colors.red)))
+                                    : _homeRecommendations.isEmpty
+                                        ? const Center(child: Text('Tidak ada rekomendasi.', style: TextStyle(color: kMutedTextColor)))
+                                        : ListView.builder(
+                                            shrinkWrap: true,
+                                            physics: const NeverScrollableScrollPhysics(),
+                                            itemCount: _homeRecommendations.length,
+                                            itemBuilder: (context, index) {
+                                              final track = _homeRecommendations[index];
+                                              return SongItem(
+                                                track: track,
+                                                trackNumber: (index + 1).toString(),
+                                              );
+                                            },
+                                          ),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+            },
           ),
-        ),
-        const SizedBox(width: 40),
-        _buildNavButton("Beranda", isActive: true),
-        _buildNavButton("Film"),
-        _buildNavButton("Acara TV"),
-        _buildNavButton("Genre"),
-        const Spacer(),
-        SizedBox(width: 250, child: _buildSearchBar()),
-      ],
-    );
-  }
-
-  // Navigasi versi Mobile (mirip md:hidden)
-  Widget _buildMobileNav() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          "MOVIELIX",
-          style: TextStyle(
-            color: kPrimaryRed,
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        // Tombol hamburger untuk membuka drawer
-        IconButton(
-          icon: const Icon(Icons.menu, color: kPrimaryText, size: 28),
-          onPressed: () {
-            Scaffold.of(context).openEndDrawer();
-          },
-        ),
-      ],
-    );
-  }
-
-  // Tombol navigasi untuk desktop
-  Widget _buildNavButton(String text, {bool isActive = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: isActive ? kPrimaryText : kSecondaryText,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          fontSize: 14,
-        ),
-      ),
-    );
-  }
-
-  // Search bar
-  Widget _buildSearchBar() {
-    return TextField(
-      style: const TextStyle(color: kPrimaryText, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: "Cari film...",
-        hintStyle: const TextStyle(color: kSecondaryText, fontSize: 14),
-        filled: true,
-        fillColor: kCardColor,
-        prefixIcon: const Icon(Icons.search, color: kSecondaryText, size: 20),
-        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: kPrimaryRed, width: 2),
-        ),
-      ),
-    );
-  }
-
-  // Drawer untuk menu mobile
-  Widget _buildMobileDrawer() {
-    return Drawer(
-      backgroundColor: kBackgroundColor,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const SizedBox(height: 40),
-          _buildSearchBar(),
-          const SizedBox(height: 20),
-          _buildDrawerItem("Beranda", Icons.home, isActive: true),
-          _buildDrawerItem("Film", Icons.movie),
-          _buildDrawerItem("Acara TV", Icons.tv),
-          _buildDrawerItem("Genre", Icons.category),
         ],
       ),
     );
   }
 
-  Widget _buildDrawerItem(
-    String title,
-    IconData icon, {
-    bool isActive = false,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: isActive ? kPrimaryRed : kSecondaryText),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isActive ? kPrimaryText : kSecondaryText,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-        ),
+  Widget _buildSearchResults(SearchState state) {
+     if (state is SearchLoading) {
+       return const SliverFillRemaining(
+         child: Center(child: CircularProgressIndicator(color: Colors.green)),
+       );
+     }
+     if (state is SearchLoaded) {
+        if (state.tracks.isEmpty) {
+          return const SliverFillRemaining(
+            child: Center(child: Text('Tidak ada hasil ditemukan.', style: TextStyle(color: kMutedTextColor))),
+          );
+       }
+       return SliverList(
+          delegate: SliverChildListDelegate(
+           [
+              const Text(
+                'Hasil Pencarian',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: Colors.white),
+              ),
+             const SizedBox(height: 20),
+             LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool isDesktop = constraints.maxWidth > 600;
+                  return isDesktop ? const SongListHeader() : const SizedBox.shrink();
+                },
+              ),
+             const SizedBox(height: 16),
+             ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: state.tracks.length,
+                itemBuilder: (context, index) {
+                  final track = state.tracks[index];
+                  // Pastikan context tersedia sebelum memanggil read
+                  // InkWell sudah ada di dalam SongItem, tidak perlu di sini
+                  return SongItem(
+                    track: track,
+                    trackNumber: (index + 1).toString(),
+                  );
+                },
+              ),
+              const SizedBox(height: 32),
+           ],
+         ),
+       );
+     }
+     if (state is SearchError) {
+        return SliverFillRemaining(
+          child: Center(child: Text('Error: ${state.message}', style: const TextStyle(color: Colors.red))),
+        );
+     }
+     return const SliverToBoxAdapter(child: SizedBox.shrink());
+  }
+}
+
+class SongListHeader extends StatelessWidget {
+  const SongListHeader({super.key});
+  @override Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: kBorderColor)),
       ),
-      onTap: () {
-        Navigator.pop(context); // Tutup drawer
-      },
-    );
-  }
-
-  // --- WIDGET KONTEN UTAMA ---
-  Widget _buildContent() {
-    return CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        // 1. Hero Section
-        SliverToBoxAdapter(child: _buildHeroSection()),
-
-        // 2. Section "Sedang Tayang"
-        SliverToBoxAdapter(child: _buildSectionTitle("Sedang Tayang")),
-        _buildMovieGrid(dummyNowPlaying),
-
-        // 3. Section "Paling Populer"
-        SliverToBoxAdapter(child: _buildSectionTitle("Paling Populer")),
-        _buildMovieGrid(dummyPopular),
-
-        // 4. Footer
-        SliverToBoxAdapter(child: _buildFooter()),
-      ],
-    );
-  }
-
-  // --- Bagian Hero ---
-  Widget _buildHeroSection() {
-    return AspectRatio(
-      aspectRatio: 16 / 8, // Rasio gambar hero
-      child: Stack(
-        fit: StackFit.expand,
+      child: Row(
         children: [
-          // Gambar Latar
-          Image.network(
-            dummyHeroMovie.posterUrl,
-            fit: BoxFit.cover,
-            // Tampilkan loading spinner saat gambar dimuat
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return const Center(
-                child: CircularProgressIndicator(color: kPrimaryRed),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: kCardColor,
-                child: const Center(
-                  child: Icon(Icons.error, color: kSecondaryText),
-                ),
-              );
-            },
+          const SizedBox(
+            width: 48,
+            child: Text('#', textAlign: TextAlign.center, style: TextStyle(color: kMutedTextColor, fontWeight: FontWeight.w500)),
           ),
-
-          // Overlay Gradient
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [kBackgroundColor, kBackgroundColor.withOpacity(0.0)],
-                stops: const [0.0, 0.7],
-              ),
+          const SizedBox(width: 16),
+          const Expanded(
+            flex: 3,
+            child: Text('JUDUL', style: TextStyle(color: kMutedTextColor, fontWeight: FontWeight.w500)),
+          ),
+          const Expanded(
+            flex: 2,
+            child: Text('ALBUM', style: TextStyle(color: kMutedTextColor, fontWeight: FontWeight.w500)),
+          ),
+          SizedBox(
+            width: 100,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Icon(Icons.access_time, size: 16, color: kMutedTextColor),
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [kBackgroundColor, kBackgroundColor.withOpacity(0.0)],
-                stops: const [0.0, 0.5],
-              ),
-            ),
-          ),
+        ],
+      ),
+    );
+   }
+}
 
-          // Konten Teks Hero
-          Positioned(
-            bottom: 40,
-            left: 40,
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.45,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+class SongItem extends StatefulWidget {
+  const SongItem({
+    super.key,
+    required this.track,
+    required this.trackNumber,
+    this.album, // Bisa dihapus
+    this.duration, // Bisa dihapus
+  });
+  final Track track;
+  final String trackNumber;
+  final String? album;
+  final String? duration;
+  @override State<SongItem> createState() => _SongItemState();
+}
+class _SongItemState extends State<SongItem> {
+  bool _isHovered = false;
+  String _formatDuration(int? milliseconds) {
+     if (milliseconds == null || milliseconds <= 0) return '-:--';
+     final duration = Duration(milliseconds: milliseconds);
+     String twoDigits(int n) => n.toString().padLeft(2, '0');
+     final minutes = twoDigits(duration.inMinutes.remainder(60));
+     final seconds = twoDigits(duration.inSeconds.remainder(60));
+     return "$minutes:$seconds";
+   }
+  @override Widget build(BuildContext context) {
+     final String title = widget.track.name;
+     final String artist = widget.track.artistName;
+     final String imageUrl = widget.track.albumImageUrl ?? 'https://via.placeholder.com/40/3f3f46/71717a?text=?';
+     final String displayAlbum = widget.track.albumName ?? '-';
+     final String displayDuration = _formatDuration(widget.track.durationMs);
+
+     return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: InkWell(
+         onTap: () {
+           // Pastikan context valid
+           if (mounted) {
+              context.read<PlayerCubit>().play(widget.track);
+           }
+         },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: _isHovered ? kCardHoverColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bool isDesktop = constraints.maxWidth > 600;
+              return Row(
                 children: [
-                  const Text(
-                    "BARU RILIS",
-                    style: TextStyle(
-                      color: kPrimaryRed,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.1,
+                  SizedBox(
+                    width: 48,
+                    child: Center(
+                      child: _isHovered
+                          ? const Icon(Icons.play_arrow, color: Colors.white, size: 20)
+                          : Text(widget.trackNumber, style: const TextStyle(color: kMutedTextColor)),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    dummyHeroMovie.title,
-                    style: const TextStyle(
-                      color: kPrimaryText,
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900,
-                      height: 1.1,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: isDesktop ? 3 : 1,
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.network(
+                            imageUrl,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(width: 40, height: 40, color: kBorderColor, child: const Icon(Icons.music_note, size: 20, color: kMutedTextColor)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(title, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.white), overflow: TextOverflow.ellipsis),
+                              Text(artist, style: const TextStyle(fontSize: 14, color: kMutedTextColor), overflow: TextOverflow.ellipsis),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Deskripsi film ini diambil dari API, menceritakan premis yang sangat menarik dan penuh aksi.",
-                    style: TextStyle(
-                      color: kSecondaryText,
-                      fontSize: 16,
-                      height: 1.5,
+                  if (isDesktop)
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(displayAlbum, style: const TextStyle(color: kMutedTextColor), overflow: TextOverflow.ellipsis),
+                      ),
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.play_arrow, color: kPrimaryText),
-                    label: const Text("Tonton Sekarang"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kPrimaryRed, // <-- Ini gantinya primary
-                      foregroundColor:
-                          kPrimaryText, // <-- Ini gantinya onPrimary
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 20,
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
+                  SizedBox(
+                    width: isDesktop ? 100 : 60,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(displayDuration, style: const TextStyle(fontSize: 14, color: kMutedTextColor)),
                     ),
                   ),
                 ],
-              ),
-            ),
+              );
+            },
           ),
-        ],
-      ),
-    );
-  }
-
-  // --- Judul Section (misal: "Sedang Tayang") ---
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24.0, 40.0, 24.0, 20.0),
-      child: Row(
-        children: [
-          // Aksen garis merah (border-l-4)
-          Container(
-            width: 5,
-            height: 28,
-            color: kPrimaryRed,
-            margin: const EdgeInsets.only(right: 12),
-          ),
-          Text(
-            title,
-            style: const TextStyle(
-              color: kPrimaryText,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- Grid Daftar Film ---
-  Widget _buildMovieGrid(List<Movie> movies) {
-    // SliverPadding agar ada jarak di sisi grid
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      sliver: SliverGrid(
-        // GridView yang responsif (mirip grid-cols-2 sm:grid-cols-3 ...)
-        delegate: SliverChildBuilderDelegate((context, index) {
-          return _MovieCard(movie: movies[index]);
-        }, childCount: movies.length),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 200, // Lebar maks setiap item
-          mainAxisSpacing: 20,
-          crossAxisSpacing: 20,
-          childAspectRatio: 2 / 3.5, // Rasio (width/height) kartu
         ),
       ),
     );
-  }
-
-  // --- Footer ---
-  Widget _buildFooter() {
-    return Container(
-      color: kFooterColor,
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-      margin: const EdgeInsets.only(top: 40),
-      child: Column(
-        children: [
-          const Text(
-            "MOVIELIX",
-            style: TextStyle(
-              color: kPrimaryRed,
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildFooterLink("Tentang Kami"),
-              _buildFooterLink("FAQ"),
-              _buildFooterLink("Kebijakan Privasi"),
-              _buildFooterLink("Kontak"),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildSocialIcon(
-                Icons.facebook,
-              ), // Ganti dengan ikon brand jika perlu
-              _buildSocialIcon(Icons.camera_alt), // Ganti dengan Twitter
-              _buildSocialIcon(Icons.camera), // Ganti dengan Instagram
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            "© 2025 Movielix. Semua Hak Cipta Dilindungi.",
-            style: TextStyle(color: kSecondaryText, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFooterLink(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-      child: Text(
-        text,
-        style: const TextStyle(color: kSecondaryText, fontSize: 14),
-      ),
-    );
-  }
-
-  Widget _buildSocialIcon(IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-      child: Icon(icon, color: kSecondaryText, size: 24),
-    );
-  }
+   }
 }
 
-// --- WIDGET KARTU FILM (Stateful untuk efek hover) ---
-class _MovieCard extends StatefulWidget {
-  final Movie movie;
-  const _MovieCard({Key? key, required this.movie}) : super(key: key);
+class _MusicPlayerBar extends StatefulWidget {
+   const _MusicPlayerBar();
+   @override State<_MusicPlayerBar> createState() => _MusicPlayerBarState();
+ }
+ class _MusicPlayerBarState extends State<_MusicPlayerBar> {
+   double _sliderValue = 0.0;
+   bool _isDraggingSlider = false;
+   Duration _currentPosition = Duration.zero;
 
-  @override
-  __MovieCardState createState() => __MovieCardState();
-}
+   @override
+   Widget build(BuildContext context) {
+     return BlocConsumer<PlayerCubit, PlayerState>(
+      listener: (context, state) {
+        final totalMillis = state.totalDuration.inMilliseconds;
+        if (!_isDraggingSlider && totalMillis > 0) {
+          // Pastikan widget masih mounted
+          if(mounted){
+             setState(() {
+              _sliderValue = (state.currentPosition.inMilliseconds / totalMillis).clamp(0.0, 1.0);
+              _currentPosition = state.currentPosition;
+            });
+          }
+        }
+        if (state.status == PlayerStatus.initial || state.status == PlayerStatus.error) {
+           if(mounted){
+             setState(() {
+              _sliderValue = 0.0;
+              _currentPosition = Duration.zero;
+            });
+           }
+         }
+      },
+      builder: (context, state) {
+        final track = state.currentTrack;
+        final totalDuration = state.totalDuration;
+        final bool isPlaying = state.status == PlayerStatus.playing;
 
-class __MovieCardState extends State<_MovieCard> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    // AnimatedContainer untuk transisi scale dan shadow
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-      // Efek scale (hover:scale-[1.03])
-      transform: Matrix4.identity()..scale(_isHovered ? 1.05 : 1.0),
-      decoration: BoxDecoration(
-        color: kCardColor,
-        borderRadius: BorderRadius.circular(8),
-        // Efek shadow (hover:shadow-2xl hover:shadow-red-600/40)
-        boxShadow: _isHovered
-            ? [
-                BoxShadow(
-                  color: kPrimaryRed.withOpacity(0.4),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  blurRadius: 15,
-                  offset: const Offset(0, 10),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        child: InkWell(
-          onTap: () {
-            // Nanti navigasi ke halaman detail
-            // Navigator.push(context, MaterialPageRoute(builder: ...));
-            print("Tapped on ${widget.movie.title}");
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        return Container(
+          height: 90,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          decoration: const BoxDecoration(
+            color: kContentBackgroundColor,
+            border: Border(top: BorderSide(color: kBorderColor)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Poster Film (aspect-[2/3])
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
-                ),
-                child: AspectRatio(
-                  aspectRatio: 2 / 3,
-                  child: Image.network(
-                    widget.movie.posterUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: kBackgroundColor,
-                        child: const Center(
-                          child: Icon(
-                            Icons.movie,
-                            color: kSecondaryText,
-                            size: 40,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+              // Info Lagu
+              Expanded(
+                flex: 1,
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4.0),
+                      child: Image.network(
+                        track?.albumImageUrl ?? 'https://via.placeholder.com/56/3f3f46/71717a?text=?',
+                        width: 56, height: 56, fit: BoxFit.cover,
+                         errorBuilder: (context, error, stackTrace) =>
+                           Container(width: 56, height: 56, color: kBorderColor, child: const Icon(Icons.music_note, color: kMutedTextColor)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(track?.name ?? 'Belum ada lagu', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 4),
+                          Text(track?.artistName ?? '-', style: const TextStyle(color: kMutedTextColor, fontSize: 12), overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    IconButton(icon: Icon(Icons.favorite_border, color: kMutedTextColor, size: 20), onPressed: () {}),
+                  ],
                 ),
               ),
-
-              // Info Teks
-              Padding(
-                padding: const EdgeInsets.all(12.0),
+              // Kontrol Player
+              Expanded(
+                flex: 2,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      widget.movie.title,
-                      style: const TextStyle(
-                        color: kPrimaryText,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          widget.movie.year,
-                          style: const TextStyle(
-                            color: kSecondaryText,
-                            fontSize: 12,
+                         IconButton(icon: Icon(Icons.shuffle, color: kMutedTextColor, size: 20), onPressed: () {}),
+                         IconButton(icon: const Icon(Icons.skip_previous, color: Colors.white, size: 28), onPressed: track != null ? () { if(mounted) context.read<PlayerCubit>().previous(); } : null),
+                         InkWell(
+                           onTap: track != null ? () { if(mounted) context.read<PlayerCubit>().togglePlayPause(); } : null,
+                           customBorder: const CircleBorder(),
+                           child: Container(
+                            width: 40, height: 40, margin: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                            child: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.black, size: 28),
+                           ),
+                         ),
+                         IconButton(icon: const Icon(Icons.skip_next, color: Colors.white, size: 28), onPressed: track != null ? () { if(mounted) context.read<PlayerCubit>().next(); } : null),
+                         IconButton(icon: Icon(Icons.repeat, color: kMutedTextColor, size: 20), onPressed: () {}),
+                       ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(_formatDuration(_isDraggingSlider ? _currentPosition : state.currentPosition), style: const TextStyle(color: kMutedTextColor, fontSize: 12)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: SliderTheme(
+                            data: SliderTheme.of(context).copyWith(trackHeight: 4.0, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0), activeTrackColor: Colors.white, inactiveTrackColor: kBorderColor, thumbColor: Colors.white, overlayColor: Colors.white.withOpacity(0.2)),
+                            child: Slider(
+                              value: _sliderValue.clamp(0.0, 1.0), min: 0.0, max: 1.0,
+                              onChanged: track != null && totalDuration.inMilliseconds > 0 ? (value) { if(mounted) setState(() { _isDraggingSlider = true; _sliderValue = value; _currentPosition = Duration(milliseconds: (value * totalDuration.inMilliseconds).round()); }); } : null,
+                              onChangeEnd: track != null && totalDuration.inMilliseconds > 0 ? (value) { final seekPosition = Duration(milliseconds: (value * totalDuration.inMilliseconds).round()); if(mounted) context.read<PlayerCubit>().seek(seekPosition); Future.delayed(const Duration(milliseconds: 200), () { if (mounted) { setState(() { _isDraggingSlider = false; }); } }); } : null,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.star, color: Colors.amber, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.movie.rating.toString(),
-                          style: const TextStyle(
-                            color: kSecondaryText,
-                            fontSize: 12,
-                          ),
-                        ),
+                        Text(_formatDuration(totalDuration), style: const TextStyle(color: kMutedTextColor, fontSize: 12)),
                       ],
                     ),
                   ],
                 ),
               ),
+              // Kontrol Ekstra
+              Expanded(
+                flex: 1,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                     IconButton(icon: Icon(Icons.mic, color: kMutedTextColor, size: 20), onPressed: () {}),
+                     IconButton(icon: Icon(Icons.queue_music, color: kMutedTextColor, size: 20), onPressed: () {}),
+                    Icon(Icons.volume_up, color: kMutedTextColor, size: 20),
+                    SizedBox(width: 100, child: SliderTheme(data: SliderTheme.of(context).copyWith(trackHeight: 4.0, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), overlayShape: const RoundSliderOverlayShape(overlayRadius: 0), activeTrackColor: Colors.white, inactiveTrackColor: kBorderColor, thumbColor: Colors.white), child: Slider(value: 0.75, min: 0.0, max: 1.0, onChanged: (value) {}))),
+                  ],
+                ),
+              ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
-  }
-}
+   }
+
+   String _formatDuration(Duration duration) {
+     if (duration == Duration.zero) return '-:--';
+     String twoDigits(int n) => n.toString().padLeft(2, '0');
+     final minutes = twoDigits(duration.inMinutes.remainder(60));
+     final seconds = twoDigits(duration.inSeconds.remainder(60));
+     return "$minutes:$seconds";
+   }
+ }
+

@@ -1,57 +1,64 @@
-// import 'package:equatable/equatable.dart';
-// import '../models/track_model.dart'; // Sesuaikan path jika perlu
+import 'package:equatable/equatable.dart';
+import '../models/track_model.dart'; // Pastikan path ini benar
 
-// // Enum untuk status pemutar yang lebih rapi
-// enum PlayerStatus {
-//   initial, // Belum ada lagu
-//   loading, // Sedang memuat lagu baru
-//   playing, // Sedang memutar
-//   paused, // Dijeda
-//   stopped, // Dihentikan
-//   error // Terjadi error
-// }
+// Enum untuk status pemutar
+enum PlayerStatus {
+  initial, // Keadaan awal, belum ada lagu
+  loading, // Sedang memuat lagu (opsional, tapi bagus untuk UX)
+  playing, // Sedang memutar
+  paused,  // Dijeda
+  stopped, // Dihentikan (tidak sama dengan initial) -> Bisa dihapus jika tidak perlu
+  error    // Terjadi kesalahan
+}
 
-// /// Tidak seperti SearchState, untuk Player lebih efisien menggunakan SATU kelas state
-// /// dan 'copyWith' untuk meng-update bagian tertentu (misal: hanya durasinya).
-// class PlayerState extends Equatable {
-//   final PlayerStatus status;
-//   final Track? currentTrack; // Lagu yang sedang aktif
-//   final Duration currentPosition; // Posisi durasi saat ini
-//   final Duration totalDuration; // Total durasi lagu
-//   final String errorMessage;
+// Class state utama
+class PlayerState extends Equatable {
+  final PlayerStatus status;
+  final Track? currentTrack; // Lagu yang sedang/terakhir diputar (bisa null)
+  final Duration currentPosition; // Posisi saat ini
+  final Duration totalDuration;   // Total durasi lagu
+  final String? errorMessage;   // Pesan error jika status == PlayerStatus.error
 
-//   const PlayerState({
-//     this.status = PlayerStatus.initial,
-//     this.currentTrack,
-//     this.currentPosition = Duration.zero,
-//     this.totalDuration = Duration.zero,
-//     this.errorMessage = '',
-//   });
+  // Constructor dengan nilai default
+  const PlayerState({
+    this.status = PlayerStatus.initial,
+    this.currentTrack,
+    this.currentPosition = Duration.zero,
+    this.totalDuration = Duration.zero,
+    this.errorMessage,
+  });
 
-//   // Helper 'copyWith' untuk mempermudah update state
-//   // Misalnya: kita hanya ingin update 'status' tapi 'currentTrack' tetap sama
-//   PlayerState copyWith({
-//     PlayerStatus? status,
-//     Track? currentTrack, // Gunakan 'ValueGetter' jika ingin meng-set null
-//     Duration? currentPosition,
-//     Duration? totalDuration,
-//     String? errorMessage,
-//   }) {
-//     return PlayerState(
-//       status: status ?? this.status,
-//       currentTrack: currentTrack ?? this.currentTrack,
-//       currentPosition: currentPosition ?? this.currentPosition,
-//       totalDuration: totalDuration ?? this.totalDuration,
-//       errorMessage: errorMessage ?? this.errorMessage,
-//     );
-//   }
+  // Fungsi helper 'copyWith' untuk memudahkan update state
+  // Ini membuat state baru berdasarkan state lama, hanya mengubah properti yang diberikan
+  PlayerState copyWith({
+    PlayerStatus? status,
+    Track? currentTrack, // Gunakan ValueGetter agar bisa di-set null secara eksplisit
+    Duration? currentPosition,
+    Duration? totalDuration,
+    String? errorMessage,
+    bool forceNullTrack = false, // Flag untuk memaksa track jadi null
+  }) {
+    return PlayerState(
+      status: status ?? this.status,
+      // Jika forceNullTrack true, set track jadi null.
+      // Jika tidak, gunakan track baru jika ada, atau track lama jika tidak.
+      currentTrack: forceNullTrack ? null : currentTrack ?? this.currentTrack,
+      currentPosition: currentPosition ?? this.currentPosition,
+      totalDuration: totalDuration ?? this.totalDuration,
+      // Jika status bukan error, hapus pesan error lama
+      errorMessage: status == PlayerStatus.error ? (errorMessage ?? this.errorMessage) : null,
+    );
+  }
 
-//   @override
-//   List<Object?> get props => [
-//         status,
-//         currentTrack,
-//         currentPosition,
-//         totalDuration,
-//         errorMessage,
-//       ];
-// }
+
+  // Properti yang digunakan oleh Equatable untuk membandingkan state
+  @override
+  List<Object?> get props => [
+        status,
+        currentTrack,
+        currentPosition,
+        totalDuration,
+        errorMessage,
+      ];
+}
+
