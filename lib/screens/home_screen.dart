@@ -1,25 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:carousel_slider/carousel_slider.dart'; // Import carousel_slider
+import 'package:carousel_slider/carousel_slider.dart';
 // Import Cubit, State, Model
 import '../state/search_cubit.dart';
 import '../state/search_state.dart';
 import '../state/player_cubit.dart';
 import '../state/player_state.dart';
 import '../models/track_model.dart';
-import '../services/spotify_service.dart'; // Perlu ini untuk ambil rekomendasi
+import '../services/spotify_service.dart';
+// --- IMPORT BARU UNTUK HALAMAN DETAIL ---
+import 'player_screens.dart';
+// ------------------------------------
+// --- Import untuk debugPrint ---
+import 'package:flutter/foundation.dart';
+// -----------------------------
 
 // --- WARNA DARI UI BARU ANDA ---
-const Color kBackgroundColor = Color(0xFF121212); // Latar belakang umum
+const Color kBackgroundColor = Color(0xFF121212);
 const Color kSidebarColor = Colors.black;
-const Color kContentBackgroundColor = Color(0xFF18181B); // Mirip zinc-900
-const Color kCardHoverColor = Color(0xFF27272A); // Mirip zinc-800 (Untuk hover & NavItem aktif)
-const Color kBorderColor = Color(0xFF3F3F46); // Mirip zinc-700 (Untuk divider & border)
-const Color kMutedTextColor = Color(0xFFA1A1AA); // Mirip zinc-400 (Teks sekunder)
-const Color kBannerGradientStart = Color(0xFF4c1d95); // purple-800
-const Color kBannerGradientEnd = Color(0x80440C79); // purple-900/50 (dengan transparansi)
-const Color kBannerTextColor = Color(0xFFd8b4fe); // purple-200
-const Color kPlayerBarBackgroundColor = kContentBackgroundColor; // Samakan dengan konten utama
+// ... (Warna Anda yang lain tetap di sini) ...
+const Color kContentBackgroundColor = Color(0xFF18181B);
+const Color kCardHoverColor = Color(0xFF27272A);
+const Color kBorderColor = Color(0xFF3F3F46);
+const Color kMutedTextColor = Color(0xFFA1A1AA);
+const Color kBannerGradientStart = Color(0xFF4c1d95);
+const Color kBannerGradientEnd = Color(0x80440C79);
+const Color kBannerTextColor = Color(0xFFd8b4fe);
+const Color kPlayerBarBackgroundColor = kContentBackgroundColor;
 // ---------------------------------
 
 
@@ -28,45 +35,37 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Scaffold utama yang mengatur layout dasar
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Tampilan Desktop (Sidebar Tetap)
           if (constraints.maxWidth > 1024) {
             return Row(
               children: [
                 const SizedBox(
-                  width: 256, // Lebar sidebar desktop
+                  width: 256,
                   child: AppSidebar(),
                 ),
                 Expanded(
-                  child: MainContent(), // Konten utama bisa scroll
+                  child: MainContent(),
                 ),
               ],
             );
-          }
-          // Tampilan Mobile (Sidebar di Drawer)
-          else {
+          } else {
             return Scaffold(
               drawer: const Drawer(
-                // Gunakan AppSidebar yang sama untuk konsistensi
                 child: AppSidebar(),
               ),
               appBar: AppBar(
-                title: const Text('Rhythora'), // Ganti judul jika perlu
+                title: const Text('Rhythora'),
                 backgroundColor: kSidebarColor,
                 elevation: 0,
               ),
-              body: MainContent(), // Konten utama
+              body: MainContent(),
             );
           }
         },
       ),
-      // --- PEMUTAR MUSIK DI BAWAH ---
-      // Player bar akan selalu ada di bawah, terlepas dari layout
       bottomNavigationBar: const _MusicPlayerBar(),
-      // -----------------------------
     );
   }
 }
@@ -74,7 +73,7 @@ class HomePage extends StatelessWidget {
 // ===== WIDGET SIDEBAR =====
 class AppSidebar extends StatelessWidget {
   const AppSidebar({super.key});
-
+  // ... (Kode AppSidebar tidak berubah) ...
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -152,6 +151,7 @@ class AppSidebar extends StatelessWidget {
 
 // Widget untuk item navigasi di sidebar
 class NavItem extends StatelessWidget {
+  // ... (Kode NavItem tidak berubah) ...
   const NavItem({
     super.key,
     required this.icon,
@@ -199,6 +199,7 @@ class MainContent extends StatefulWidget {
 }
 
 class _MainContentState extends State<MainContent> {
+  // ... (Kode _MainContentState tidak berubah signifikan) ...
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   List<Track> _trendingTracks = []; // Untuk data slider
@@ -225,14 +226,12 @@ class _MainContentState extends State<MainContent> {
       _homeError = null;
     });
     try {
-      // Pastikan context masih valid sebelum memanggil RepositoryProvider
       if (!mounted) return;
       final spotifyService = RepositoryProvider.of<SpotifyService>(context);
       final List<Track> fetchedTrending = await spotifyService.searchTracks('trending songs indonesia');
       final List<Track> recommendedTracks = await spotifyService.searchTracks('new releases indonesia');
 
-       // Pastikan widget masih mounted sebelum setState
-      if (mounted) {
+       if (mounted) {
         setState(() {
           _homeRecommendations = recommendedTracks;
           _trendingTracks = fetchedTrending.take(5).toList();
@@ -285,7 +284,6 @@ class _MainContentState extends State<MainContent> {
                 onSubmitted: (query) {
                   if (query.isNotEmpty) {
                     debugPrint("HomeScreen: Memanggil SearchCubit.searchTracks dengan query: $query");
-                    // Pastikan context tersedia sebelum memanggil read
                     if (mounted) {
                        context.read<SearchCubit>().searchTracks(query);
                     }
@@ -312,7 +310,7 @@ class _MainContentState extends State<MainContent> {
                         padding: const EdgeInsets.only(bottom: 32.0),
                         child: _isLoadingHome
                           ? const SizedBox(height: 250, child: Center(child: CircularProgressIndicator(color: Colors.green)))
-                          : _homeError != null // Tampilkan error jika ada
+                          : _homeError != null
                               ? SizedBox(height: 250, child: Center(child: Text(_homeError!, style: const TextStyle(color: Colors.red))))
                               : _trendingTracks.isEmpty
                                   ? const SizedBox(height: 250, child: Center(child: Text("Tidak ada lagu trending.", style: TextStyle(color: kMutedTextColor))))
@@ -329,59 +327,69 @@ class _MainContentState extends State<MainContent> {
                                         final track = _trendingTracks[itemIndex];
                                         return InkWell(
                                            onTap: () {
-                                              if (mounted) { // Pastikan context valid
+                                              if (mounted) {
+                                                 debugPrint("Slider Tapped: ${track.name}");
                                                  context.read<PlayerCubit>().play(track);
+                                                 Navigator.push(
+                                                   context,
+                                                   MaterialPageRoute(
+                                                     builder: (context) => TrackDetailScreen(track: track),
+                                                   ),
+                                                 );
                                               }
                                            },
-                                          child: Container(
-                                            width: MediaQuery.of(context).size.width,
-                                            margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey[800],
-                                              borderRadius: BorderRadius.circular(12),
-                                              image: track.albumImageUrl != null
-                                                ? DecorationImage(
-                                                    image: NetworkImage(track.albumImageUrl!),
-                                                    fit: BoxFit.cover,
-                                                    colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.5), BlendMode.darken)
-                                                  )
-                                                : null,
-                                              gradient: track.albumImageUrl == null
-                                                ? const LinearGradient(
-                                                    colors: [kBannerGradientStart, kBannerGradientEnd],
-                                                    begin: Alignment.topLeft,
-                                                    end: Alignment.bottomRight,
-                                                  )
-                                                : null,
-                                            ),
-                                            child: Stack(
-                                               children: [
-                                                  if (track.albumImageUrl == null)
-                                                     Center(child: Icon(Icons.music_note, color: kMutedTextColor.withOpacity(0.5), size: 80)),
-                                                  Positioned(
-                                                    bottom: 16,
-                                                    left: 16,
-                                                    right: 16,
-                                                    child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: [
-                                                         Text(
-                                                          track.name,
-                                                          style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(blurRadius: 2)]),
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow.ellipsis,
-                                                        ),
-                                                         Text(
-                                                          track.artistName,
-                                                          style: TextStyle(fontSize: 14.0, color: Colors.grey[300], shadows: const [Shadow(blurRadius: 1)]),
-                                                           maxLines: 1,
-                                                          overflow: TextOverflow.ellipsis,
-                                                        ),
-                                                      ],
+                                          child: Hero(
+                                            tag: 'track_image_${track.id}',
+                                            child: Container(
+                                              width: MediaQuery.of(context).size.width,
+                                              margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey[800],
+                                                borderRadius: BorderRadius.circular(12),
+                                                image: track.albumImageUrl != null
+                                                  ? DecorationImage(
+                                                      image: NetworkImage(track.albumImageUrl!),
+                                                      fit: BoxFit.cover,
+                                                      colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.5), BlendMode.darken)
+                                                    )
+                                                  : null,
+                                                gradient: track.albumImageUrl == null
+                                                  ? const LinearGradient(
+                                                      colors: [kBannerGradientStart, kBannerGradientEnd],
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment.bottomRight,
+                                                    )
+                                                  : null,
+                                              ),
+                                              child: Stack(
+                                                 children: [
+                                                    if (track.albumImageUrl == null)
+                                                       Center(child: Icon(Icons.music_note, color: kMutedTextColor.withOpacity(0.5), size: 80)),
+                                                    Positioned(
+                                                      bottom: 16,
+                                                      left: 16,
+                                                      right: 16,
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                           Text(
+                                                            track.name,
+                                                            style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(blurRadius: 2)]),
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                           Text(
+                                                            track.artistName,
+                                                            style: TextStyle(fontSize: 14.0, color: Colors.grey[300], shadows: const [Shadow(blurRadius: 1)]),
+                                                             maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
-                                                  ),
-                                               ]
-                                             ),
+                                                 ]
+                                               ),
+                                            ),
                                           ),
                                         );
                                       },
@@ -430,6 +438,7 @@ class _MainContentState extends State<MainContent> {
   }
 
   Widget _buildSearchResults(SearchState state) {
+// ... (Kode _buildSearchResults tidak berubah) ...
      if (state is SearchLoading) {
        return const SliverFillRemaining(
          child: Center(child: CircularProgressIndicator(color: Colors.green)),
@@ -484,7 +493,9 @@ class _MainContentState extends State<MainContent> {
   }
 }
 
+// Widget header tabel (tidak berubah)
 class SongListHeader extends StatelessWidget {
+// ... (Kode SongListHeader tidak berubah) ...
   const SongListHeader({super.key});
   @override Widget build(BuildContext context) {
     return Container(
@@ -520,13 +531,15 @@ class SongListHeader extends StatelessWidget {
    }
 }
 
+// Widget item lagu (MODIFIKASI: Tambahkan Navigasi dan Hero)
 class SongItem extends StatefulWidget {
+// ... (Kode properti SongItem tidak berubah) ...
   const SongItem({
     super.key,
     required this.track,
     required this.trackNumber,
-    this.album, // Bisa dihapus
-    this.duration, // Bisa dihapus
+    this.album,
+    this.duration,
   });
   final Track track;
   final String trackNumber;
@@ -556,9 +569,15 @@ class _SongItemState extends State<SongItem> {
       onExit: (_) => setState(() => _isHovered = false),
       child: InkWell(
          onTap: () {
-           // Pastikan context valid
            if (mounted) {
-              context.read<PlayerCubit>().play(widget.track);
+             debugPrint("SongItem Tapped: ${widget.track.name}");
+             context.read<PlayerCubit>().play(widget.track);
+             Navigator.push(
+               context,
+               MaterialPageRoute(
+                 builder: (context) => TrackDetailScreen(track: widget.track),
+               ),
+             );
            }
          },
         child: Container(
@@ -585,15 +604,18 @@ class _SongItemState extends State<SongItem> {
                     flex: isDesktop ? 3 : 1,
                     child: Row(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.network(
-                            imageUrl,
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(width: 40, height: 40, color: kBorderColor, child: const Icon(Icons.music_note, size: 20, color: kMutedTextColor)),
+                        Hero(
+                          tag: 'track_image_${widget.track.id}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.network(
+                              imageUrl,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(width: 40, height: 40, color: kBorderColor, child: const Icon(Icons.music_note, size: 20, color: kMutedTextColor)),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -634,6 +656,7 @@ class _SongItemState extends State<SongItem> {
    }
 }
 
+// Widget player bar (MODIFIKASI: Tambahkan Hero dan Perbaikan Layout)
 class _MusicPlayerBar extends StatefulWidget {
    const _MusicPlayerBar();
    @override State<_MusicPlayerBar> createState() => _MusicPlayerBarState();
@@ -649,7 +672,6 @@ class _MusicPlayerBar extends StatefulWidget {
       listener: (context, state) {
         final totalMillis = state.totalDuration.inMilliseconds;
         if (!_isDraggingSlider && totalMillis > 0) {
-          // Pastikan widget masih mounted
           if(mounted){
              setState(() {
               _sliderValue = (state.currentPosition.inMilliseconds / totalMillis).clamp(0.0, 1.0);
@@ -682,17 +704,21 @@ class _MusicPlayerBar extends StatefulWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Info Lagu
-              Expanded(
-                flex: 1,
+              // --- PERBAIKAN: Ganti Expanded -> Flexible ---
+              Flexible(
+                flex: 1, // Bagian ini bisa mengecil
                 child: Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4.0),
-                      child: Image.network(
-                        track?.albumImageUrl ?? 'https://via.placeholder.com/56/3f3f46/71717a?text=?',
-                        width: 56, height: 56, fit: BoxFit.cover,
-                         errorBuilder: (context, error, stackTrace) =>
-                           Container(width: 56, height: 56, color: kBorderColor, child: const Icon(Icons.music_note, color: kMutedTextColor)),
+                    Hero(
+                      tag: 'track_image_${track?.id ?? 'default_player_image'}',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4.0),
+                        child: Image.network(
+                          track?.albumImageUrl ?? 'https://via.placeholder.com/56/3f3f46/71717a?text=?',
+                          width: 56, height: 56, fit: BoxFit.cover,
+                           errorBuilder: (context, error, stackTrace) =>
+                             Container(width: 56, height: 56, color: kBorderColor, child: const Icon(Icons.music_note, color: kMutedTextColor)),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -712,8 +738,9 @@ class _MusicPlayerBar extends StatefulWidget {
                   ],
                 ),
               ),
+              // -------------------------------------------
               // Kontrol Player
-              Expanded(
+              Expanded( // Bagian tengah tetap Expanded agar mengambil sisa ruang
                 flex: 2,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -760,18 +787,29 @@ class _MusicPlayerBar extends StatefulWidget {
                 ),
               ),
               // Kontrol Ekstra
-              Expanded(
-                flex: 1,
+              // --- PERBAIKAN: Ganti Expanded -> Flexible ---
+              Flexible(
+                flex: 1, // Bagian ini bisa mengecil
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                      IconButton(icon: Icon(Icons.mic, color: kMutedTextColor, size: 20), onPressed: () {}),
                      IconButton(icon: Icon(Icons.queue_music, color: kMutedTextColor, size: 20), onPressed: () {}),
                     Icon(Icons.volume_up, color: kMutedTextColor, size: 20),
-                    SizedBox(width: 100, child: SliderTheme(data: SliderTheme.of(context).copyWith(trackHeight: 4.0, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), overlayShape: const RoundSliderOverlayShape(overlayRadius: 0), activeTrackColor: Colors.white, inactiveTrackColor: kBorderColor, thumbColor: Colors.white), child: Slider(value: 0.75, min: 0.0, max: 1.0, onChanged: (value) {}))),
+                    // Gunakan Expanded di dalam Flexible Row agar slider mengambil sisa ruang
+                    Expanded(
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(trackHeight: 4.0, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), overlayShape: const RoundSliderOverlayShape(overlayRadius: 0), activeTrackColor: Colors.white, inactiveTrackColor: kBorderColor, thumbColor: Colors.white), 
+                        child: Slider(
+                          value: 0.75, min: 0.0, max: 1.0, 
+                          onChanged: (value) { /* TODO: Implement Volume */ }
+                        )
+                      ),
+                    ),
                   ],
                 ),
               ),
+              // -------------------------------------------
             ],
           ),
         );
