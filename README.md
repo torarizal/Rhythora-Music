@@ -16,8 +16,8 @@ Didesain dengan antarmuka minimalis namun elegan, **MyMusic** menghadirkan nuans
 | 2. | Tiara Zahrofi Ifadhah    | 24111814049 |
 | 3. | Tora Rizal Pratama       | 24111814059 |
 | 4. | Aurora Ilmannafia        | 24111814069 |
-| 5. | Kirana Shofa Dzakiyyah   | 24111814104 |
-| 6. | Amelanov Destyawanda     | 24111814092 |
+| 5. | Amelanov Destyawanda     | 24111814092 |
+| 6. | Kirana Shofa Dzakiyyah   | 24111814104 |
 | 7. | Farid Ade Novian         | 24111814140 |
 
 
