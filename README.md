@@ -2,10 +2,10 @@
 
 > “Putar, temukan, dan rasakan ritme dalam setiap nada.” 🎶  
 
-**MyMusic** adalah aplikasi web modern yang memungkinkan pengguna untuk **menelusuri, memutar, dan menemukan lagu favorit mereka secara real-time**.  
+**Rythora** adalah aplikasi web modern yang memungkinkan pengguna untuk **menelusuri, memutar, dan menemukan lagu favorit mereka secara real-time**.  
 Aplikasi ini terintegrasi dengan **Spotify Web API** dan sumber musik lain yang legal, memberikan pengalaman streaming musik yang **interaktif, cepat, dan personal**.
 
-Didesain dengan antarmuka minimalis namun elegan, **MyMusic** menghadirkan nuansa seperti platform profesional layaknya Spotify dan Apple Music
+Didesain dengan antarmuka minimalis namun elegan, **Rythora** menghadirkan nuansa seperti platform profesional layaknya Spotify dan Apple Music
 ---
 
 👥 Tim Pengembang — CINEMA WEB TEAM
@@ -28,7 +28,7 @@ Didesain dengan antarmuka minimalis namun elegan, **MyMusic** menghadirkan nuans
 | Frontend | React.js, Tailwind CSS |
 | Backend | Node.js, Express.js |
 | API | Spotify Web API |
-| Tools | Axios, Vite, GitHub, Vercel |
+| Tools | Vscode, GitHub, Vercel |
 | Version Control | Git & GitHub |
 
 ---
