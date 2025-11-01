@@ -32,7 +32,7 @@ class AuthService {
     
     if (kDebugMode) {
       
-      return "http://127.0.0.1:49614";
+      return "http://127.0.0.1:49614/callback.html";
     } else {
       
       return "https://torarizal.github.io/rythora_music_web/"; 
@@ -107,20 +107,16 @@ class AuthService {
         '&redirect_uri=${Uri.encodeComponent(_redirectUrl)}'); // Gunakan getter URL
         
    final eventListener = html.window.onMessage.listen((event) {
-  if (event.origin.contains("github.io")) {
-    // Pastikan data adalah URL string dari postMessage()
-    final uri = Uri.parse(event.data.toString());
-
+  final data = event.data.toString();
+  if (data.contains('code=')) {
+    final uri = Uri.parse(data);
     final code = uri.queryParameters['code'];
     if (code != null) {
       completer.complete(code);
-    } else {
-      completer.completeError(
-        "Login dibatalkan atau gagal: ${uri.queryParameters['error']}",
-      );
     }
   }
 });
+
 
 
      try {
