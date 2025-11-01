@@ -21,7 +21,7 @@
   <meta name="description" content="A new Flutter project.">
 
   <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="rhythora">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
@@ -33,6 +33,52 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+  // Cek apakah URL ini punya parameter ?code=...
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('code') || params.has('error')) {
+    // Kirim kembali ke window pembuka (app utama Flutter)
+    if (window.opener) {
+      window.opener.postMessage(window.location.href, "*");
+      window.close(); // Tutup popup
+    }
+  }
+</script>
+
+  <!-- ===== 1. SCRIPT SPOTIFY WEB SDK ===== -->
+  <!-- Wajib ada untuk memutar musik premium di web -->
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+  <!-- ================================== -->
+
+  <script>
+    // Stub untuk Spotify SDK
+    // PlayerService di Flutter akan 'mengambil alih' fungsi ini
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      console.log("Spotify Web Playback SDK siap.");
+    };
+  </script>
+
+  <!-- ===== 2. SCRIPT FLUTTER BARU ===== -->
+  <!-- Menggantikan flutter_bootstrap.js -->
+  <script src="flutter.js" defer></script>
+  <!-- ================================== -->
+
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Inisialisasi Flutter Engine
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          // Ganti 'serviceWorkerVersion' dengan nilai dari file 'flutter_service_worker.js'
+          // atau biarkan null jika Anda tidak menggunakannya.
+          serviceWorkerVersion: null, 
+        }
+      }).then(function(engine) {
+        engine.initializeEngine().then(function(appRunner) {
+          appRunner.runApp();
+        });
+      });
+    });
+  </script>
 </body>
 </html>
+

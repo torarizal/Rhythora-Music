@@ -1,6 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+// --- IMPORT BARU ---
+import 'package:flutter/foundation.dart'; // Untuk 'kIsWeb' DAN 'kDebugMode'
+import 'package:flutter/material.dart'; // Untuk debugPrint
+import 'package:url_launcher/url_launcher.dart'; // Untuk membuka URL login
+// 'dart:html' hanya di-import jika platformnya web
+// Kita gunakan 'conditional import' agar tidak error di mobile
+import 'html_stub.dart' if (dart.library.html) 'dart:html' as html;
+// -------------------
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:spotify_sdk/spotify_sdk.dart';
@@ -14,68 +21,152 @@ enum AuthStatus {
 }
 
 class AuthService {
-  // Ganti dengan Client ID Anda dari Spotify Dashboard
-  static const String _clientId = "02418a8456574b5cb62c47abb34877c0"; // Pastikan ini benar
-  // Ganti 'rhythora' jika Anda mengubahnya, tapi ini sudah benar
-  static const String _redirectUrl = "rhythora://callback";
+  static const String _clientId = "6ad4ddc21f4c4746a3a0e47492a02c0b";
+  
+  // --- Tentukan Redirect URI berdasarkan Platform ---
+  // 1. Ini untuk Mobile (Android/iOS)
+  static const String _mobileRedirectUrl = "rhythora://callback"; 
+  
+  
+  String get _webRedirectUrl {
+    
+    if (kDebugMode) {
+      
+      return "http://127.0.0.1:49614";
+    } else {
+      
+      return "https://torarizal.github.io/rythora_music_web/"; 
+    }
+  }
+  // --------------------------------------------------------
 
   // Ganti ini dengan URL Vercel Anda yang AKTIF
-  static const String _backendUrl = "https://rhythora-backend-new.vercel.app/api"; 
+  static const String _backendUrl = "https://rhythora-backend-update.vercel.app/api";
 
   final _storage = const FlutterSecureStorage();
 
-  // Variabel internal untuk menyimpan status
   AuthStatus _authStatus = AuthStatus.unknown;
-
-  // Getter publik agar file lain (seperti PlayerService) bisa cek
+  
   bool get isPremium => _authStatus == AuthStatus.premium;
   AuthStatus get currentStatus => _authStatus;
 
-  // Menyimpan token
-  Future<void> _saveTokens(String accessToken, String? refreshToken) async { // Ubah jadi String?
+  // --- Helper untuk mendapatkan Redirect URL yang benar ---
+  String get _redirectUrl {
+  if (kIsWeb) {
+    return _webRedirectUrl; 
+  } else {
+    return _mobileRedirectUrl;
+  }
+}
+
+  // --------------------------------------------------
+
+  Future<void> _saveTokens(String accessToken, String? refreshToken) async {
     await _storage.write(key: 'spotify_access_token', value: accessToken);
-    // Hanya simpan refresh token jika tidak null atau kosong
     if (refreshToken != null && refreshToken.isNotEmpty) {
       await _storage.write(key: 'spotify_refresh_token', value: refreshToken);
     } else {
-      // Hapus refresh token jika null atau kosong (misal untuk Guest)
       await _storage.delete(key: 'spotify_refresh_token');
     }
   }
 
-  // --- FUNGSI UTAMA UNTUK LOGIN CUBIT ---
-
-  /// Mencoba login dengan Spotify SDK (Premium / Free User)
   Future<AuthStatus> loginWithSpotify() async {
+    if (kIsWeb) {
+      return _loginWithSpotifyWeb();
+    } else {
+      return _loginWithSpotifyMobile();
+    }
+  }
+
+  Future<AuthStatus> _loginWithSpotifyMobile() async {
     try {
+      debugPrint("Mencoba login Mobile dengan redirect URL: $_mobileRedirectUrl");
       final accessToken = await SpotifySdk.getAccessToken(
         clientId: _clientId,
-        redirectUrl: _redirectUrl,
+        redirectUrl: _mobileRedirectUrl,
         scope: "app-remote-control, user-read-playback-state, streaming, user-read-email, user-read-private",
       );
-
-      // (PENTING) SDK tidak memberikan refresh token.
-      // Anda HARUS mengimplementasikan 'Authorization Code Flow' via backend
-      // untuk mendapatkan refresh token asli agar sesi bertahan lama.
-      // Untuk SEKARANG, kita simpan access token saja dan refresh token palsu.
-      await _saveTokens(accessToken, "DUMMY_REFRESH_TOKEN_SDK_PLEASE_REPLACE");
-      // ------------------------------------
-
-      // Cek tipe akun (Premium atau Free)
-      final userType = await _getUserType(accessToken);
+      debugPrint("Login Spotify (Mobile) Berhasil!");
+      await _saveTokens(accessToken, "DUMMY_REFRESH_TOKEN_SDK_PLEASE_REPLACE"); 
+      final userType = await checkUserTypeWithToken(accessToken);
       _authStatus = (userType == 'premium') ? AuthStatus.premium : AuthStatus.free;
-
-      debugPrint("Login Spotify Berhasil: $_authStatus");
       return _authStatus;
-
     } catch (e) {
-      debugPrint("Gagal login Spotify SDK: $e");
+      debugPrint("Gagal login Spotify SDK (Mobile): $e");
       throw Exception("Gagal terhubung ke Spotify. Pastikan Spotify terinstal.");
     }
   }
 
-  /// Mencoba login sebagai Guest (Memanggil Backend)
+  Future<AuthStatus> _loginWithSpotifyWeb() async {
+     final completer = Completer<String>();
+     final scope = "app-remote-control user-read-playback-state streaming user-read-email user-read-private";
+     final authUrl = Uri.parse('https://accounts.spotify.com/authorize?' +
+        'response_type=code' +
+        '&client_id=$_clientId' +
+        '&scope=${Uri.encodeComponent(scope)}' +
+        '&redirect_uri=${Uri.encodeComponent(_redirectUrl)}'); // Gunakan getter URL
+        
+   final eventListener = html.window.onMessage.listen((event) {
+  if (event.origin.contains("github.io")) {
+    // Pastikan data adalah URL string dari postMessage()
+    final uri = Uri.parse(event.data.toString());
+
+    final code = uri.queryParameters['code'];
+    if (code != null) {
+      completer.complete(code);
+    } else {
+      completer.completeError(
+        "Login dibatalkan atau gagal: ${uri.queryParameters['error']}",
+      );
+    }
+  }
+});
+
+
+     try {
+        html.window.open(authUrl.toString(), "Spotify Login", "width=500,height=800");
+     } catch (e) {
+         debugPrint("Gagal buka popup, fallback ke launchUrl: $e");
+         if (!await launchUrl(authUrl, mode: LaunchMode.externalApplication)) {
+             eventListener.cancel();
+             throw Exception('Tidak bisa membuka URL login Spotify.');
+         }
+     }
+     
+     try {
+       final code = await completer.future;
+       eventListener.cancel();
+       debugPrint("Web login: 'code' diterima, menukar token di backend...");
+       final response = await http.post(
+         Uri.parse("$_backendUrl/exchange-token"),
+         headers: {'Content-Type': 'application/json'},
+         body: json.encode({
+           'code': code,
+           'redirect_uri': _redirectUrl // Kirim redirect_uri yang dinamis
+         }),
+       );
+
+       if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final accessToken = data['access_token'];
+          final refreshToken = data['refresh_token'];
+          await _saveTokens(accessToken, refreshToken);
+          final userType = await checkUserTypeWithToken(accessToken);
+          _authStatus = (userType == 'premium') ? AuthStatus.premium : AuthStatus.free;
+          debugPrint("Login Spotify (Web) Berhasil: $_authStatus");
+          return _authStatus;
+       } else {
+         throw Exception("Gagal menukar kode dengan token di backend: ${response.body}");
+       }
+     } catch (e) {
+        eventListener.cancel();
+        debugPrint("Gagal login Spotify (Web): $e");
+        throw Exception("Gagal login: ${e.toString()}");
+     }
+  }
+
   Future<AuthStatus> loginAsGuest() async {
+    // ... (Fungsi ini tidak berubah) ...
     try {
       final response = await http.get(
         Uri.parse("$_backendUrl/guest-token"),
@@ -84,25 +175,20 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final accessToken = data['access_token'];
-
-        // Gunakan fungsi helper (dengan refresh token kosong)
-        await _saveTokens(accessToken, null); // Guest tidak punya refresh token
+        await _saveTokens(accessToken, null);
         _authStatus = AuthStatus.guest;
-
         debugPrint("Login Guest Berhasil");
         return _authStatus;
       } else {
-        // Coba baca pesan error dari backend jika ada
         String serverError = response.body;
         try {
           final errorData = json.decode(response.body);
           serverError = errorData['error'] ?? response.body;
-        } catch (_) {} // Abaikan jika body bukan JSON
+        } catch (_) {}
         throw Exception("Gagal mendapatkan token tamu dari server: ${response.statusCode} - $serverError");
       }
     } catch (e) {
       debugPrint("Error loginAsGuest: $e");
-      // Perjelas errornya
       if (e is http.ClientException) {
          throw Exception("Gagal terhubung ke server backend. Periksa koneksi internet dan URL backend.");
       }
@@ -110,17 +196,13 @@ class AuthService {
     }
   }
 
-  /// Memperbarui token yang expired (Memanggil Backend)
   Future<String> refreshToken() async {
-    // --- PERBAIKAN: Ganti nama variabel lokal ---
+    // ... (Fungsi ini tidak berubah) ...
     final storedRefreshToken = await _storage.read(key: 'spotify_refresh_token');
-    // -------------------------------------------
 
-    // Cek jika refresh token valid (bukan dummy dari SDK)
     if (storedRefreshToken == null || storedRefreshToken.isEmpty || storedRefreshToken == "DUMMY_REFRESH_TOKEN_SDK_PLEASE_REPLACE") {
-    // --- Gunakan storedRefreshToken ---
       _authStatus = AuthStatus.unknown;
-       await _storage.deleteAll(); // Hapus semua token jika refresh token tidak valid
+       await _storage.deleteAll();
       throw Exception("Sesi berakhir. Silakan login kembali (refresh token tidak valid).");
     }
 
@@ -128,28 +210,19 @@ class AuthService {
       final response = await http.post(
         Uri.parse("$_backendUrl/refresh-token"),
         headers: {'Content-Type': 'application/json'},
-         // --- Gunakan storedRefreshToken ---
         body: json.encode({'refresh_token': storedRefreshToken}),
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final newAccessToken = data['access_token'];
-        // --- Gunakan storedRefreshToken ---
-        String newRefreshToken = storedRefreshToken; // Tetap gunakan yang lama jika tidak ada yang baru
-
-        // Spotify mungkin mengirim refresh token baru, simpan jika ada
+        String newRefreshToken = storedRefreshToken; 
         if (data['refresh_token'] != null) {
           newRefreshToken = data['refresh_token'];
         }
-
-        // Gunakan fungsi helper
         await _saveTokens(newAccessToken, newRefreshToken);
-
-        // Penting: Update juga status user (premium/free) karena bisa saja berubah
-         final userType = await _getUserType(newAccessToken);
+         final userType = await checkUserTypeWithToken(newAccessToken);
          _authStatus = (userType == 'premium') ? AuthStatus.premium : AuthStatus.free;
-
         return newAccessToken;
       } else {
          String serverError = response.body;
@@ -157,7 +230,6 @@ class AuthService {
            final errorData = json.decode(response.body);
            serverError = errorData['error'] ?? response.body;
          } catch (_) {}
-         // Jika refresh token gagal (misal dicabut), logout paksa
           _authStatus = AuthStatus.unknown;
           await _storage.deleteAll();
          throw Exception("Gagal memperbarui token: ${response.statusCode} - $serverError. Sesi berakhir.");
@@ -167,7 +239,6 @@ class AuthService {
        if (e is http.ClientException) {
           throw Exception("Gagal terhubung ke server backend untuk refresh token.");
        }
-       // Jika error lain, mungkin sesi berakhir
         _authStatus = AuthStatus.unknown;
         await _storage.deleteAll();
        throw Exception("Terjadi kesalahan saat memperbarui sesi. Silakan login kembali.");
@@ -175,12 +246,9 @@ class AuthService {
   }
 
 
-  // --- Helper ---
-
-  /// Cek tipe akun ke Spotify API
-  Future<String> _getUserType(String token) async {
+  Future<String> checkUserTypeWithToken(String token) async {
+    // ... (Fungsi ini tidak berubah) ...
      if (token.isEmpty) return 'free';
-
     try {
       final response = await http.get(
         Uri.parse('https://api.spotify.com/v1/me'),
@@ -191,64 +259,45 @@ class AuthService {
         return data['product'] ?? 'free';
       } else {
          debugPrint("Gagal cek user type: ${response.statusCode}");
-        return 'free';
+         return 'failed'; 
       }
     } catch (e) {
        debugPrint("Error _getUserType: $e");
-      return 'free';
+      return 'failed';
     }
   }
 
-  // --- Tambahan: Fungsi untuk cek status awal ---
-  /// Cek status login saat aplikasi dimulai
   Future<void> checkInitialAuthStatus() async {
+    // ... (Fungsi ini tidak berubah) ...
      final token = await _storage.read(key: 'spotify_access_token');
-     // --- PERBAIKAN: Ganti nama variabel lokal ---
      final storedRefreshToken = await _storage.read(key: 'spotify_refresh_token');
-     // -------------------------------------------
 
      if (token == null) {
        _authStatus = AuthStatus.unknown;
        return;
      }
+     
+     final userType = await checkUserTypeWithToken(token);
 
-     // Coba cek user type dengan token yang ada
-     final userType = await _getUserType(token);
-
-     // Jika gagal cek user type (token mungkin expired) DAN ada refresh token valid
-     // --- Gunakan storedRefreshToken ---
-     if (userType == 'free' && storedRefreshToken != null && storedRefreshToken.isNotEmpty && storedRefreshToken != "DUMMY_REFRESH_TOKEN_SDK_PLEASE_REPLACE") {
+     if (userType == 'failed' && storedRefreshToken != null && storedRefreshToken.isNotEmpty) {
         try {
-          // Coba refresh token
-          await refreshToken(); // Panggil fungsi refresh (tidak perlu simpan hasilnya)
-          // Setelah refresh, status user sudah diupdate di dalam refreshToken()
+          await refreshToken(); 
           debugPrint("Token berhasil direfresh saat startup.");
-          return; // Status sudah diupdate
+          return;
         } catch (e) {
-           // Jika refresh gagal, anggap logout
            debugPrint("Refresh token gagal saat startup: $e");
            _authStatus = AuthStatus.unknown;
            await _storage.deleteAll();
            return;
         }
-     // --- Gunakan storedRefreshToken ---
-     } else if (userType == 'free' && (storedRefreshToken == null || storedRefreshToken.isEmpty || storedRefreshToken == "DUMMY_REFRESH_TOKEN_SDK_PLEASE_REPLACE")){
-        // Jika token ada tapi refresh token tidak valid (Guest atau SDK dummy)
-         // --- Gunakan storedRefreshToken ---
-         if (storedRefreshToken == null || storedRefreshToken.isEmpty) {
-            _authStatus = AuthStatus.guest; // Anggap guest jika refresh token tidak ada
-         } else {
-            // Jika token ada dan refresh token = dummy, berarti dari SDK login
-             _authStatus = AuthStatus.free; // Anggap free (karena tidak bisa refresh)
-         }
+     } 
+     else if (userType == 'failed' && (storedRefreshToken == null || storedRefreshToken.isEmpty)){
+         _authStatus = AuthStatus.guest; 
      }
       else {
-       // Jika user type berhasil dicek (premium/free)
        _authStatus = (userType == 'premium') ? AuthStatus.premium : AuthStatus.free;
      }
       debugPrint("Status awal terdeteksi: $_authStatus");
   }
-
-
 }
 
