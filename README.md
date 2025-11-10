@@ -6,7 +6,7 @@
 Aplikasi ini terintegrasi dengan **Spotify Web API** dan sumber musik lain yang legal, memberikan pengalaman streaming musik yang **interaktif, cepat, dan personal**.
 
 Didesain dengan antarmuka minimalis namun elegan, **Rythora** menghadirkan nuansa seperti platform profesional layaknya Spotify dan Apple Music
----
+
 
 👥 Tim Pengembang — CINEMA WEB TEAM
 
