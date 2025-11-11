@@ -94,7 +94,7 @@ class LoginScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildHeader(),
+                _buildHeader(), // <-- WIDGET YANG DIPERBARUI
                 const SizedBox(height: 32.0),
                 // GANTI form email/password dengan tombol Spotify & Guest
                 _buildSpotifyLoginButton(context), // Tombol Spotify
@@ -115,11 +115,11 @@ class LoginScreen extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        // PANGGIL CUBIT SAAT DITEKAN
+        // PANGGIL CUBIT SAAT DITEKAN (FUNGSI TIDAK BERUBAH)
         onPressed: () {
           context.read<LoginCubit>().loginWithSpotify();
         },
-        icon: const Icon(Icons.music_note), // Ganti dengan ikon Spotify
+        icon: const Icon(Icons.music_note), // Anda bisa ganti ini dengan logo Spotify jika mau
         label: const Text("Masuk dengan Spotify"),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1DB954), // Warna Hijau Spotify
@@ -142,7 +142,7 @@ class LoginScreen extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
-        // PANGGIL CUBIT SAAT DITEKAN
+        // PANGGIL CUBIT SAAT DITEKAN (FUNGSI TIDAK BERUBAH)
         onPressed: () {
           context.read<LoginCubit>().loginAsGuest();
         },
@@ -165,47 +165,28 @@ class LoginScreen extends StatelessWidget {
 
   // --- Widget Bantuan (UI Anda, tidak diubah) ---
 
+  // ===== INI BAGIAN YANG DIPERBARUI =====
   Widget _buildHeader() {
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(12.0), // p-3
-          decoration: const BoxDecoration(
-            color: kPrimaryColor,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black45,
-                blurRadius: 10.0,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.music_note,
-            color: Colors.white,
-            size: 32.0, // h-8 w-8
-          ),
+        // Mengganti ikon dan teks "Octave" dengan logo Rhythora
+        Image.asset(
+          'assets/images/logo_rhythora.png',
+          width: 220, // Sesuaikan ukuran agar pas di dalam kartu
         ),
-        const SizedBox(height: 16.0),
+        const SizedBox(height: 24.0), // Beri jarak sedikit lebih banyak
         const Text(
-          "Octave",
-          style: TextStyle(
-            fontSize: 30.0, // text-3xl
-            fontWeight: FontWeight.bold,
-            color: kTextColor,
-          ),
-        ),
-        const SizedBox(height: 8.0),
-        const Text(
-          "Selamat datang!",
+          "Selamat datang", // Teks sapaan yang lebih simpel
           style: TextStyle(
             color: kTextSecondaryColor,
+            fontSize: 16, 
           ),
         ),
       ],
     );
   }
+  // ======================================
+
 
   Widget _buildSignUpLink() {
     return Row(
@@ -230,4 +211,3 @@ class LoginScreen extends StatelessWidget {
     );
   }
 }
-
