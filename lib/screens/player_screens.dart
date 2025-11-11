@@ -513,6 +513,7 @@ class _PlayerControls extends StatelessWidget {
             inactiveTrackColor: Colors.white.withOpacity(0.15),
             thumbColor: neonColor, // Hanya didefinisikan sekali
             overlayColor: neonColor.withOpacity(0.4),
+            trackShape: const RectangularSliderTrackShape(),
           ),
           child: Slider(
             min: 0,
