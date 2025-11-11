@@ -125,48 +125,32 @@ class AppSidebar extends StatelessWidget {
                 child: Divider(color: kBorderColor), // Garis pemisah
               ),
 
-              // --- Daftar Putar (Hapus Dummy) ---
-              const Text(
-                'Daftar Putar',
-                style: TextStyle(
-                  color: kMutedTextColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: BlocBuilder<PlaylistCubit, PlaylistState>(
-                  builder: (context, state) {
-                    if (state is PlaylistLoading || state is PlaylistInitial) {
-                      return const PlaylistSidebarSkeleton();
-                    }
-                    if (state is PlaylistLoaded) {
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: state.playlists.length,
-                        itemBuilder: (context, index) {
-                          final playlist = state.playlists[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6.0),
-                            child: Text(
-                              playlist.name,
-                              style: const TextStyle(color: kMutedTextColor),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        },
-                      );
-                    }
-                    if (state is PlaylistError) {
-                      return Text(state.message, style: const TextStyle(color: Colors.red));
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ),
-              // ------------------------------------
-            ],
+          // --- Daftar Putar (Hapus Dummy) ---
+          const Text(
+            'Daftar Putar',
+            style: TextStyle(
+              color: kMutedTextColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 16
+            ),
+          ),
+          const SizedBox(height: 16),
+            //tester update fix
+          Expanded(
+            child: ListView(
+              shrinkWrap: true,
+              children: const [
+                 Padding( // Contoh item playlist
+                   padding: EdgeInsets.symmetric(vertical: 6.0),
+                   child: Text('Lagu Favorit', style: TextStyle(color: kMutedTextColor)),
+                 ),
+                 Padding(
+                   padding: EdgeInsets.symmetric(vertical: 6.0),
+                   child: Text('Mix Harian 1', style: TextStyle(color: kMutedTextColor)),
+                 ),
+                 // ... tambahkan item lain jika perlu
+              ],
+            ),
           ),
         );
       },
