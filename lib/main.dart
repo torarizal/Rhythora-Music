@@ -94,7 +94,7 @@ class MyApp extends StatelessWidget {
             BlocProvider<PlaylistCubit>(
               create: (context) => PlaylistCubit(
                 context.read<SpotifyService>(),
-              )..fetchUserPlaylists(),
+              ),
             ),
             BlocProvider<NavigationCubit>(
               create: (context) => NavigationCubit(),

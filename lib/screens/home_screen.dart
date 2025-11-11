@@ -9,6 +9,7 @@ import 'package:rhythora/state/navigation_state.dart';
 import 'package:rhythora/state/playlist_cubit.dart';
 import 'package:rhythora/state/playlist_state.dart';
 import 'package:rhythora/widgets/loading_skeletons.dart';
+import 'package:rhythora/screens/collection_screen.dart';
 import '../state/search_cubit.dart';
 import '../state/search_state.dart';
 import '../state/player_cubit.dart';
@@ -125,32 +126,36 @@ class AppSidebar extends StatelessWidget {
                 child: Divider(color: kBorderColor), // Garis pemisah
               ),
 
-          // --- Daftar Putar (Hapus Dummy) ---
-          const Text(
-            'Daftar Putar',
-            style: TextStyle(
-              color: kMutedTextColor,
-              fontWeight: FontWeight.w600,
-              fontSize: 16
-            ),
-          ),
-          const SizedBox(height: 16),
-            //tester update fix
-          Expanded(
-            child: ListView(
-              shrinkWrap: true,
-              children: const [
-                 Padding( // Contoh item playlist
-                   padding: EdgeInsets.symmetric(vertical: 6.0),
-                   child: Text('Lagu Favorit', style: TextStyle(color: kMutedTextColor)),
-                 ),
-                 Padding(
-                   padding: EdgeInsets.symmetric(vertical: 6.0),
-                   child: Text('Mix Harian 1', style: TextStyle(color: kMutedTextColor)),
-                 ),
-                 // ... tambahkan item lain jika perlu
-              ],
-            ),
+              // --- Daftar Putar (Hapus Dummy) ---
+              const Text(
+                'Daftar Putar',
+                style: TextStyle(
+                    color: kMutedTextColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              //tester update fix
+              Expanded(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: const [
+                    Padding(
+                      // Contoh item playlist
+                      padding: EdgeInsets.symmetric(vertical: 6.0),
+                      child: Text('Lagu Favorit',
+                          style: TextStyle(color: kMutedTextColor)),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 6.0),
+                      child: Text('Mix Harian 1',
+                          style: TextStyle(color: kMutedTextColor)),
+                    ),
+                    // ... tambahkan item lain jika perlu
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -213,6 +218,11 @@ class MainContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<NavigationCubit, NavigationState>(
       builder: (context, state) {
+        // Hapus CustomScrollView jika halaman baru sudah punya scaffold sendiri
+        if (state.page == NavPage.library) {
+          return _buildLibraryPageContent();
+        }
+
         return CustomScrollView(
           slivers: [
             if (state.page == NavPage.search)
@@ -254,8 +264,7 @@ class MainContent extends StatelessWidget {
               _buildHomePageContent(),
             if (state.page == NavPage.search)
               _buildSearchPageContent(),
-            if (state.page == NavPage.library)
-              _buildLibraryPageContent(),
+            // Hapus pemanggilan lama
           ],
         );
       },
@@ -426,75 +435,7 @@ class MainContent extends StatelessWidget {
   }
 
   Widget _buildLibraryPageContent() {
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-      sliver: BlocBuilder<PlaylistCubit, PlaylistState>(
-        builder: (context, state) {
-          if (state is PlaylistLoading || state is PlaylistInitial) {
-            return const LibraryLoadingSkeleton();
-          }
-          if (state is PlaylistError) {
-            return SliverFillRemaining(
-              child: Center(child: Text(state.message, style: const TextStyle(color: Colors.red))),
-            );
-          }
-          if (state is PlaylistLoaded) {
-            return SliverGrid(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 220.0,
-                mainAxisSpacing: 24.0,
-                crossAxisSpacing: 24.0,
-                childAspectRatio: 0.8,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final playlist = state.playlists[index];
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AspectRatio(
-                        aspectRatio: 1,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: kCardHoverColor,
-                            borderRadius: BorderRadius.circular(8),
-                            image: playlist.imageUrl != null
-                                ? DecorationImage(
-                                    image: NetworkImage(playlist.imageUrl!),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                          ),
-                          child: playlist.imageUrl == null
-                              ? const Center(child: Icon(Icons.music_note, size: 40, color: kMutedTextColor))
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        playlist.name,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Playlist • ${playlist.owner}',
-                        style: const TextStyle(color: kMutedTextColor, fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  );
-                },
-                childCount: state.playlists.length,
-              ),
-            );
-          }
-          return const SliverToBoxAdapter(child: SizedBox.shrink());
-        },
-      ),
-    );
+    return const CollectionScreen();
   }
 
   Widget _buildSearchResults(SearchState state) {
