@@ -121,7 +121,7 @@ class AppSidebar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // TODO: Ganti dengan BlocBuilder<PlaylistCubit, PlaylistState>
+            //tester update fix
           Expanded(
             child: ListView(
               shrinkWrap: true,
