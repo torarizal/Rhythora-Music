@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autentikasi Spotify...</title>
+    <!-- Ini adalah styling sederhana agar tidak terlihat kosong -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+        }
+        /* Loader animasi sederhana */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1DB954; /* Warna hijau Spotify */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="loader"></div>
+        <p>Sedang memproses autentikasi...</p>
+        <p>Anda bisa menutup jendela ini jika tidak tertutup otomatis.</p>
+    </div>
+
+    <script>
+        // Jalankan skrip setelah halaman dimuat
+        window.onload = function() {
+            // 1. Dapatkan URL origin dari aplikasi Flutter utama (misal: http://localhost:49614)
+            //    Kita gunakan window.location.origin dari popup itu sendiri,
+            //    karena callback.html disajikan dari server yang sama (localhost).
+            const targetOrigin = window.location.origin;
+
+            // 2. Kirim URL LENGKAP dari popup ini (yang berisi 'code' atau 'error')
+            //    kembali ke jendela aplikasi Flutter yang membukanya (window.opener).
+            if (window.opener) {
+                // AuthService Anda akan mendengarkan 'postMessage' ini
+                window.opener.postMessage(window.location.href, targetOrigin);
+            }
+
+            // 3. (Opsional) Tutup jendela popup ini
+            // Beri jeda sedikit agar 'postMessage' terkirim
+            setTimeout(() => {
+                window.close();
+            }, 500); 
+        };
+        
+    </script>
+    
+</body>
+</html>
+

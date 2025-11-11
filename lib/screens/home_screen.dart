@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-// Import Cubit, State, Model
 import '../state/search_cubit.dart';
 import '../state/search_state.dart';
 import '../state/player_cubit.dart';
 import '../state/player_state.dart';
 import '../models/track_model.dart';
 import '../services/spotify_service.dart';
-// --- IMPORT BARU UNTUK HALAMAN DETAIL ---
 import 'player_screens.dart';
-// ------------------------------------
-// --- Import untuk debugPrint ---
 import 'package:flutter/foundation.dart';
 // -----------------------------
 

@@ -41,6 +41,8 @@ dependencies:
   lucide_flutter: ^0.548.0
   carousel_slider: ^5.1.1
   palette_generator: ^0.3.3+4
+  url_launcher: ^6.3.2
+  js: ^0.7.0 
 
 dev_dependencies:
   flutter_test:
