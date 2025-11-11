@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:palette_generator/palette_generator.dart';
-// Asumsikan path model dan state sudah benar
 import '../models/track_model.dart'; 
 import '../state/player_cubit.dart'; 
 import '../state/player_state.dart'; 
@@ -713,7 +712,7 @@ class _AnimatedPlayPauseButtonState extends State<_AnimatedPlayPauseButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _glowAnimation;
+  // late Animation<double> _glowAnimation;
 
   @override
   void initState() {
@@ -725,9 +724,9 @@ class _AnimatedPlayPauseButtonState extends State<_AnimatedPlayPauseButton>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
-    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    // _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    //   CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    // );
 
     if (widget.isPlaying) {
       _controller.forward();

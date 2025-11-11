@@ -104,7 +104,7 @@ class AuthService {
         'response_type=code' +
         '&client_id=$_clientId' +
         '&scope=${Uri.encodeComponent(scope)}' +
-        '&redirect_uri=${Uri.encodeComponent(_redirectUrl)}'); // Gunakan getter URL
+        '&redirect_uri=${Uri.encodeComponent(_redirectUrl)}'); 
         
    final eventListener = html.window.onMessage.listen((event) {
   final data = event.data.toString();
