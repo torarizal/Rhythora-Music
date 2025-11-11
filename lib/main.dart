@@ -4,7 +4,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Import s
 // --- PERBAIKAN: Tambahkan import HomeScreen ---
 import 'package:rhythora/screens/splash_screen.dart';
 import 'package:rhythora/state/auth_cubit.dart'; // Import AuthCubitState
+import 'package:rhythora/state/home_cubit.dart';
 import 'package:rhythora/state/login_cubit.dart';
+import 'package:rhythora/state/navigation_cubit.dart';
+import 'package:rhythora/state/playlist_cubit.dart';
 import 'services/auth_service.dart';
 import 'services/player_service.dart';
 import 'services/spotify_service.dart';
@@ -82,6 +85,19 @@ class MyApp extends StatelessWidget {
               create: (context) => LoginCubit(
                 context.read<AuthService>(),
               ),
+            ),
+            BlocProvider<HomeCubit>(
+              create: (context) => HomeCubit(
+                context.read<SpotifyService>(),
+              )..fetchHomeData(),
+            ),
+            BlocProvider<PlaylistCubit>(
+              create: (context) => PlaylistCubit(
+                context.read<SpotifyService>(),
+              )..fetchUserPlaylists(),
+            ),
+            BlocProvider<NavigationCubit>(
+              create: (context) => NavigationCubit(),
             ),
           ],
           child: MaterialApp(
