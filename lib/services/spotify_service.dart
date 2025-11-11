@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Import storage
+import '../models/playlist_model.dart';
 import '../models/track_model.dart';
 import 'auth_service.dart'; // Masih perlu untuk cek status & refresh
 
@@ -86,8 +87,25 @@ class SpotifyService {
     }
   }
 
-  // --- Tambahkan fungsi lain di sini ---
-  // Contoh: Future<List<Playlist>> getUserPlaylists() async { ... }
-  // Contoh: Future<Album> getAlbumDetails(String albumId) async { ... }
-}
+  Future<List<Playlist>> getUserPlaylists() async {
+    final response = await _makeApiCall((token) {
+      return http.get(
+        Uri.parse('$_baseUrl/me/playlists?limit=50'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+    });
 
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['items'] != null) {
+        final List playlistList = data['items'];
+        return playlistList
+            .map((json) => Playlist.fromJson(json))
+            .toList();
+      }
+      return [];
+    } else {
+      throw Exception('Failed to load playlists');
+    }
+  }
+}
