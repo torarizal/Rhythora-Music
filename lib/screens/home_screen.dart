@@ -9,7 +9,6 @@ import 'package:rhythora/state/navigation_state.dart';
 import 'package:rhythora/state/playlist_cubit.dart';
 import 'package:rhythora/state/playlist_state.dart';
 import 'package:rhythora/widgets/loading_skeletons.dart';
-import 'package:rhythora/screens/collection_screen.dart';
 import '../state/search_cubit.dart';
 import '../state/search_state.dart';
 import '../state/player_cubit.dart';
@@ -216,11 +215,17 @@ class NavItem extends StatelessWidget {
 }
 
 // ===== WIDGET KONTEN UTAMA =====
-class MainContent extends StatelessWidget {
-  MainContent({super.key});
+class MainContent extends StatefulWidget {
+  const MainContent({super.key});
 
+  @override
+  State<MainContent> createState() => _MainContentState();
+}
+
+class _MainContentState extends State<MainContent> {
   final TextEditingController _searchController = TextEditingController();
-  List<Track> _trendingTracks = []; // Untuk data slider
+  final ScrollController _scrollController = ScrollController();
+  List<Track> _trendingTracks = [];
   List<Track> _homeRecommendations = [];
   bool _isLoadingHome = true;
   String? _homeError;
@@ -231,15 +236,31 @@ class MainContent extends StatelessWidget {
   String _artistFilter = '';
   String _albumFilter = '';
 
+  @override
+  void initState() {
+    super.initState();
+    context.read<HomeCubit>().fetchHomeData();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   List<Track> _sortAndFilterTracks(List<Track> tracks) {
-    // Apply filters
     List<Track> filteredTracks = tracks.where((track) {
-      final matchesArtist = _artistFilter.isEmpty || track.artistName.toLowerCase().contains(_artistFilter.toLowerCase());
-      final matchesAlbum = _albumFilter.isEmpty || (track.albumName?.toLowerCase().contains(_albumFilter.toLowerCase()) ?? false);
+      final matchesArtist = _artistFilter.isEmpty ||
+          track.artistName.toLowerCase().contains(_artistFilter.toLowerCase());
+      final matchesAlbum = _albumFilter.isEmpty ||
+          (track.albumName
+                  ?.toLowerCase()
+                  .contains(_albumFilter.toLowerCase()) ??
+              false);
       return matchesArtist && matchesAlbum;
     }).toList();
 
-    // Apply sorting
     filteredTracks.sort((a, b) {
       int compare = 0;
       switch (_sortOption) {
@@ -262,59 +283,12 @@ class MainContent extends StatelessWidget {
     return filteredTracks;
   }
 
- @override
-  void initState() {
-    super.initState();
-    _loadHomeRecommendations();
-  }
-
- @override
-  void dispose() {
-    _scrollController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadHomeRecommendations() async {
-    setState(() {
-      _isLoadingHome = true;
-      _homeError = null;
-    });
-    try {
-      if (!mounted) return;
-      final spotifyService = RepositoryProvider.of<SpotifyService>(context);
-      final List<Track> fetchedTrending = await spotifyService.searchTracks('trending songs indonesia');
-      final List<Track> recommendedTracks = await spotifyService.searchTracks('new releases indonesia');
-
-       if (mounted) {
-        setState(() {
-          _homeRecommendations = recommendedTracks;
-          _trendingTracks = fetchedTrending.take(5).toList();
-          _isLoadingHome = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error loading home recommendations: $e");
-       if (mounted) {
-        setState(() {
-          _homeError = "Gagal memuat rekomendasi."; // Pesan lebih singkat
-          _isLoadingHome = false;
-        });
-       }
-    }
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NavigationCubit, NavigationState>(
       builder: (context, state) {
-        // Hapus CustomScrollView jika halaman baru sudah punya scaffold sendiri
-        if (state.page == NavPage.library) {
-          return _buildLibraryPageContent();
-        }
-
         return CustomScrollView(
+          controller: _scrollController,
           slivers: [
             if (state.page == NavPage.search)
               SliverAppBar(
@@ -333,10 +307,12 @@ class MainContent extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: 'Cari lagu atau artis...',
                       hintStyle: const TextStyle(color: kMutedTextColor),
-                      prefixIcon: const Icon(Icons.search, color: kMutedTextColor),
+                      prefixIcon:
+                          const Icon(Icons.search, color: kMutedTextColor),
                       filled: true,
                       fillColor: kCardHoverColor,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0, horizontal: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8.0),
                         borderSide: BorderSide.none,
@@ -350,12 +326,9 @@ class MainContent extends StatelessWidget {
                   ),
                 ),
               ),
-
-            if (state.page == NavPage.home)
-              _buildHomePageContent(),
-            if (state.page == NavPage.search)
-              _buildSearchPageContent(),
-            // Hapus pemanggilan lama
+            if (state.page == NavPage.home) _buildHomePageContent(),
+            if (state.page == NavPage.search) _buildSearchPageContent(),
+            if (state.page == NavPage.library) _buildLibraryPageContent(),
           ],
         );
       },
@@ -363,146 +336,191 @@ class MainContent extends StatelessWidget {
   }
 
   Widget _buildHomePageContent() {
-    return BlocBuilder<HomeCubit, HomeState>(
+    return BlocConsumer<HomeCubit, HomeState>(
+      listener: (context, state) {
+        if (state is HomeLoaded) {
+          setState(() {
+            _trendingTracks = state.trendingTracks;
+            _homeRecommendations = state.recommendedTracks;
+            _isLoadingHome = false;
+          });
+        } else if (state is HomeError) {
+          setState(() {
+            _homeError = state.message;
+            _isLoadingHome = false;
+          });
+        } else if (state is HomeLoading || state is HomeInitial) {
+          setState(() {
+            _isLoadingHome = true;
+          });
+        }
+      },
       builder: (context, state) {
-        if (state is HomeLoading || state is HomeInitial) {
+        if (_isLoadingHome) {
           return const HomeLoadingSkeleton();
         }
-        if (state is HomeError) {
+        if (_homeError != null) {
           return SliverFillRemaining(
-            child: Center(child: Text(state.message, style: const TextStyle(color: Colors.red))),
+            child: Center(
+                child: Text(_homeError!,
+                    style: const TextStyle(color: Colors.red))),
           );
         }
-        if (state is HomeLoaded) {
-          return SliverList(
-            delegate: SliverChildListDelegate(
-              [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 32.0),
-                  child: state.trendingTracks.isEmpty
-                      ? const SizedBox(height: 250, child: Center(child: Text("Tidak ada lagu trending.", style: TextStyle(color: kMutedTextColor))))
-                      : CarouselSlider.builder(
-                          options: CarouselOptions(
-                            height: 250.0,
-                            autoPlay: true,
-                            enlargeCenterPage: true,
-                            viewportFraction: 0.8,
-                            autoPlayInterval: const Duration(seconds: 5),
-                          ),
-                          itemCount: state.trendingTracks.length,
-                          itemBuilder: (context, itemIndex, pageViewIndex) {
-                            final track = state.trendingTracks[itemIndex];
-                            return InkWell(
-                               onTap: () {
-                                  context.read<PlayerCubit>().play(track);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => TrackDetailScreen(track: track),
-                                    ),
-                                  );
-                               },
-                              child: Hero(
-                                tag: 'track_image_${track.id}',
-                                child: Container(
-                                  width: MediaQuery.of(context).size.width,
-                                  margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[800],
-                                    borderRadius: BorderRadius.circular(12),
-                                    image: track.albumImageUrl != null
+        return SliverList(
+          delegate: SliverChildListDelegate(
+            [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 32.0),
+                child: _trendingTracks.isEmpty
+                    ? const SizedBox(
+                        height: 250,
+                        child: Center(
+                            child: Text("Tidak ada lagu trending.",
+                                style: TextStyle(color: kMutedTextColor))))
+                    : CarouselSlider.builder(
+                        options: CarouselOptions(
+                          height: 250.0,
+                          autoPlay: true,
+                          enlargeCenterPage: true,
+                          viewportFraction: 0.8,
+                          autoPlayInterval: const Duration(seconds: 5),
+                        ),
+                        itemCount: _trendingTracks.length,
+                        itemBuilder: (context, itemIndex, pageViewIndex) {
+                          final track = _trendingTracks[itemIndex];
+                          return InkWell(
+                            onTap: () {
+                              context.read<PlayerCubit>().play(track);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      TrackDetailScreen(track: track),
+                                ),
+                              );
+                            },
+                            child: Hero(
+                              tag: 'track_image_${track.id}',
+                              child: Container(
+                                width: MediaQuery.of(context).size.width,
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 5.0),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[800],
+                                  borderRadius: BorderRadius.circular(12),
+                                  image: track.albumImageUrl != null
                                       ? DecorationImage(
-                                          image: NetworkImage(track.albumImageUrl!),
+                                          image: NetworkImage(
+                                              track.albumImageUrl!),
                                           fit: BoxFit.cover,
-                                          colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.5), BlendMode.darken)
-                                        )
+                                          colorFilter: ColorFilter.mode(
+                                              Colors.black.withOpacity(0.5),
+                                              BlendMode.darken))
                                       : null,
-                                    gradient: track.albumImageUrl == null
+                                  gradient: track.albumImageUrl == null
                                       ? const LinearGradient(
-                                          colors: [kBannerGradientStart, kBannerGradientEnd],
+                                          colors: [
+                                            kBannerGradientStart,
+                                            kBannerGradientEnd
+                                          ],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
                                         )
                                       : null,
-                                  ),
-                                  child: Stack(
-                                     children: [
-                                        if (track.albumImageUrl == null)
-                                           Center(child: Icon(Icons.music_note, color: kMutedTextColor.withOpacity(0.5), size: 80)),
-                                        Positioned(
-                                          bottom: 16,
-                                          left: 16,
-                                          right: 16,
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                               Text(
-                                                track.name,
-                                                style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.white, shadows: [Shadow(blurRadius: 2)]),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                               Text(
-                                                track.artistName,
-                                                style: TextStyle(fontSize: 14.0, color: Colors.grey[300], shadows: const [Shadow(blurRadius: 1)]),
-                                                 maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                     ]
-                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Rilis Baru',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: Colors.white),
-                      ),
-                      const SizedBox(height: 20),
-                      state.recommendedTracks.isEmpty
-                          ? const Center(child: Text('Tidak ada rekomendasi.', style: TextStyle(color: kMutedTextColor)))
-                          : AnimationLimiter(
-                            child: ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: state.recommendedTracks.length,
-                                itemBuilder: (context, index) {
-                                  final track = state.recommendedTracks[index];
-                                  return AnimationConfiguration.staggeredList(
-                                    position: index,
-                                    duration: const Duration(milliseconds: 375),
-                                    child: SlideAnimation(
-                                      verticalOffset: 50.0,
-                                      child: FadeInAnimation(
-                                        child: SongItem(
-                                          track: track,
-                                          trackNumber: (index + 1).toString(),
+                                child: Stack(children: [
+                                  if (track.albumImageUrl == null)
+                                    Center(
+                                        child: Icon(Icons.music_note,
+                                            color:
+                                                kMutedTextColor.withOpacity(0.5),
+                                            size: 80)),
+                                  Positioned(
+                                    bottom: 16,
+                                    left: 16,
+                                    right: 16,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          track.name,
+                                          style: const TextStyle(
+                                              fontSize: 20.0,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              shadows: [Shadow(blurRadius: 2)]),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
+                                        Text(
+                                          track.artistName,
+                                          style: TextStyle(
+                                              fontSize: 14.0,
+                                              color: Colors.grey[300],
+                                              shadows: const [
+                                                Shadow(blurRadius: 1)
+                                              ]),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ]),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Rilis Baru',
+                      style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white),
+                    ),
+                    const SizedBox(height: 20),
+                    _homeRecommendations.isEmpty
+                        ? const Center(
+                            child: Text('Tidak ada rekomendasi.',
+                                style: TextStyle(color: kMutedTextColor)))
+                        : AnimationLimiter(
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _homeRecommendations.length,
+                              itemBuilder: (context, index) {
+                                final track = _homeRecommendations[index];
+                                return AnimationConfiguration.staggeredList(
+                                  position: index,
+                                  duration: const Duration(milliseconds: 375),
+                                  child: SlideAnimation(
+                                    verticalOffset: 50.0,
+                                    child: FadeInAnimation(
+                                      child: SongItem(
+                                        track: track,
+                                        trackNumber: (index + 1).toString(),
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                      const SizedBox(height: 32),
-                    ],
-                  ),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-              ],
-            ),
-          );
-        }
-        return const SliverToBoxAdapter(child: SizedBox.shrink());
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -513,7 +531,8 @@ class MainContent extends StatelessWidget {
         if (state is SearchInitial) {
           return const SliverFillRemaining(
             child: Center(
-              child: Text('Mulai cari lagu atau artis.', style: TextStyle(color: kMutedTextColor)),
+              child: Text('Mulai cari lagu atau artis.',
+                  style: TextStyle(color: kMutedTextColor)),
             ),
           );
         }
@@ -526,157 +545,254 @@ class MainContent extends StatelessWidget {
   }
 
   Widget _buildLibraryPageContent() {
-    return const CollectionScreen();
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+      sliver: BlocBuilder<PlaylistCubit, PlaylistState>(
+        builder: (context, state) {
+          if (state is PlaylistLoading || state is PlaylistInitial) {
+            return const SliverToBoxAdapter(child: LibraryLoadingSkeleton());
+          }
+          if (state is PlaylistError) {
+            return SliverFillRemaining(
+              child: Center(
+                  child: Text(state.message,
+                      style: const TextStyle(color: Colors.red))),
+            );
+          }
+          if (state is PlaylistLoaded) {
+            if (state.playlists.isEmpty) {
+              return const SliverFillRemaining(
+                child: Center(
+                    child: Text('Anda belum punya playlist.',
+                        style: TextStyle(color: kMutedTextColor))),
+              );
+            }
+            return SliverGrid(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 220.0,
+                mainAxisSpacing: 24.0,
+                crossAxisSpacing: 24.0,
+                childAspectRatio: 0.8,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final playlist = state.playlists[index];
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AspectRatio(
+                        aspectRatio: 1,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: kCardHoverColor,
+                            borderRadius: BorderRadius.circular(8),
+                            image: playlist.imageUrl != null
+                                ? DecorationImage(
+                                    image: NetworkImage(playlist.imageUrl!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: playlist.imageUrl == null
+                              ? const Center(
+                                  child: Icon(Icons.music_note,
+                                      size: 40, color: kMutedTextColor))
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        playlist.name,
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Playlist • ${playlist.ownerName}',
+                        style: const TextStyle(
+                            color: kMutedTextColor, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  );
+                },
+                childCount: state.playlists.length,
+              ),
+            );
+          }
+          return const SliverToBoxAdapter(child: SizedBox.shrink());
+        },
+      ),
+    );
   }
 
   Widget _buildSearchResults(SearchState state) {
-// ... (Kode _buildSearchResults tidak berubah) ...
-     if (state is SearchLoading) {
-       return const SliverFillRemaining(
-         child: Center(child: CircularProgressIndicator(color: Colors.green)),
-       );
-     }
-     if (state is SearchLoaded) {
-        final sortedAndFilteredTracks = _sortAndFilterTracks(state.tracks);
-        if (sortedAndFilteredTracks.isEmpty) {
-          return const SliverFillRemaining(
-            child: Center(child: Text('Tidak ada hasil ditemukan.', style: TextStyle(color: kMutedTextColor))),
-          );
-       }
-       return SliverList(
-          delegate: SliverChildListDelegate(
-           [
-              const Text(
-                'Hasil Pencarian',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: Colors.white),
-              ),
-             const SizedBox(height: 20),
-             // Sort and Filter Controls
-             Row(
-               children: [
-                 Expanded(
-                   child: DropdownButtonFormField<SortOption>(
-                     value: _sortOption,
-                     decoration: InputDecoration(
-                       labelText: 'Urutkan',
-                       labelStyle: const TextStyle(color: kMutedTextColor),
-                       filled: true,
-                       fillColor: kCardHoverColor,
-                       border: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(8.0),
-                         borderSide: BorderSide.none,
-                       ),
-                     ),
-                     dropdownColor: kCardHoverColor,
-                     style: const TextStyle(color: Colors.white),
-                     items: const [
-                       DropdownMenuItem(value: SortOption.trackName, child: Text('Nama Lagu')),
-                       DropdownMenuItem(value: SortOption.artistName, child: Text('Artis')),
-                       DropdownMenuItem(value: SortOption.albumName, child: Text('Album')),
-                       DropdownMenuItem(value: SortOption.duration, child: Text('Durasi')),
-                     ],
-                     onChanged: (value) {
-                       if (value != null) {
-                         setState(() {
-                           _sortOption = value;
-                         });
-                       }
-                     },
-                   ),
-                 ),
-                 const SizedBox(width: 16),
-                 IconButton(
-                   icon: Icon(_isAscending ? Icons.arrow_upward : Icons.arrow_downward, color: Colors.white),
-                   onPressed: () {
-                     setState(() {
-                       _isAscending = !_isAscending;
-                     });
-                   },
-                 ),
-               ],
-             ),
-             const SizedBox(height: 16),
-             // Filter Text Fields
-             Row(
-               children: [
-                 Expanded(
-                   child: TextField(
-                     style: const TextStyle(color: Colors.white),
-                     decoration: InputDecoration(
-                       hintText: 'Filter artis...',
-                       hintStyle: const TextStyle(color: kMutedTextColor),
-                       filled: true,
-                       fillColor: kCardHoverColor,
-                       contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                       border: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(8.0),
-                         borderSide: BorderSide.none,
-                       ),
-                     ),
-                     onChanged: (value) {
-                       setState(() {
-                         _artistFilter = value;
-                       });
-                     },
-                   ),
-                 ),
-                 const SizedBox(width: 16),
-                 Expanded(
-                   child: TextField(
-                     style: const TextStyle(color: Colors.white),
-                     decoration: InputDecoration(
-                       hintText: 'Filter album...',
-                       hintStyle: const TextStyle(color: kMutedTextColor),
-                       filled: true,
-                       fillColor: kCardHoverColor,
-                       contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                       border: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(8.0),
-                         borderSide: BorderSide.none,
-                       ),
-                     ),
-                     onChanged: (value) {
-                       setState(() {
-                         _albumFilter = value;
-                       });
-                     },
-                   ),
-                 ),
-               ],
-             ),
-             const SizedBox(height: 20),
-             LayoutBuilder(
-                builder: (context, constraints) {
-                  final bool isDesktop = constraints.maxWidth > 600;
-                  return isDesktop ? const SongListHeader() : const SizedBox.shrink();
-                },
-              ),
-             const SizedBox(height: 16),
-             ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: sortedAndFilteredTracks.length,
-                itemBuilder: (context, index) {
-                  final track = sortedAndFilteredTracks[index];
-                  // Pastikan context tersedia sebelum memanggil read
-                  // InkWell sudah ada di dalam SongItem, tidak perlu di sini
-                  return SongItem(
-                    track: track,
-                    trackNumber: (index + 1).toString(),
-                  );
-                },
-              ),
-              const SizedBox(height: 32),
-           ],
-         ),
-       );
-     }
-     if (state is SearchError) {
-        return SliverFillRemaining(
-          child: Center(child: Text('Error: ${state.message}', style: const TextStyle(color: Colors.red))),
+    if (state is SearchLoading) {
+      return const SliverFillRemaining(
+        child: Center(child: CircularProgressIndicator(color: Colors.green)),
+      );
+    }
+    if (state is SearchLoaded) {
+      final sortedAndFilteredTracks = _sortAndFilterTracks(state.tracks);
+      if (sortedAndFilteredTracks.isEmpty) {
+        return const SliverFillRemaining(
+          child: Center(
+              child: Text('Tidak ada hasil ditemukan.',
+                  style: TextStyle(color: kMutedTextColor))),
         );
-     }
-     return const SliverToBoxAdapter(child: SizedBox.shrink());
+      }
+      return SliverList(
+        delegate: SliverChildListDelegate(
+          [
+            const Text(
+              'Hasil Pencarian',
+              style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white),
+            ),
+            const SizedBox(height: 20),
+            // Sort and Filter Controls
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<SortOption>(
+                    value: _sortOption,
+                    decoration: InputDecoration(
+                      labelText: 'Urutkan',
+                      labelStyle: const TextStyle(color: kMutedTextColor),
+                      filled: true,
+                      fillColor: kCardHoverColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    dropdownColor: kCardHoverColor,
+                    style: const TextStyle(color: Colors.white),
+                    items: const [
+                      DropdownMenuItem(
+                          value: SortOption.trackName, child: Text('Nama Lagu')),
+                      DropdownMenuItem(
+                          value: SortOption.artistName, child: Text('Artis')),
+                      DropdownMenuItem(
+                          value: SortOption.albumName, child: Text('Album')),
+                      DropdownMenuItem(
+                          value: SortOption.duration, child: Text('Durasi')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _sortOption = value;
+                        });
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: Icon(
+                      _isAscending
+                          ? Icons.arrow_upward
+                          : Icons.arrow_downward,
+                      color: Colors.white),
+                  onPressed: () {
+                    setState(() {
+                      _isAscending = !_isAscending;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Filter Text Fields
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Filter artis...',
+                      hintStyle: const TextStyle(color: kMutedTextColor),
+                      filled: true,
+                      fillColor: kCardHoverColor,
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0, horizontal: 16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _artistFilter = value;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextField(
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Filter album...',
+                      hintStyle: const TextStyle(color: kMutedTextColor),
+                      filled: true,
+                      fillColor: kCardHoverColor,
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 0, horizontal: 16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _albumFilter = value;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final bool isDesktop = constraints.maxWidth > 600;
+                return isDesktop
+                    ? const SongListHeader()
+                    : const SizedBox.shrink();
+              },
+            ),
+            const SizedBox(height: 16),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: sortedAndFilteredTracks.length,
+              itemBuilder: (context, index) {
+                final track = sortedAndFilteredTracks[index];
+                return SongItem(
+                  track: track,
+                  trackNumber: (index + 1).toString(),
+                );
+              },
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      );
+    }
+    if (state is SearchError) {
+      return SliverFillRemaining(
+        child: Center(
+            child: Text('Error: ${state.message}',
+                style: const TextStyle(color: Colors.red))),
+      );
+    }
+    return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
 }
 

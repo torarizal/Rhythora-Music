@@ -295,5 +295,28 @@ class AuthService {
      }
       debugPrint("Status awal terdeteksi: $_authStatus");
   }
+
+  /// Menghubungkan ke Spotify SDK Remote Control
+  Future<bool> connectSdk() async {
+    // Hanya coba hubungkan jika user premium
+    if (_authStatus != AuthStatus.premium) return false;
+
+    try {
+      debugPrint("Mencoba menghubungkan Spotify SDK Remote...");
+      final connected = await SpotifySdk.connectToSpotifyRemote(
+        clientId: _clientId,
+        redirectUrl: _redirectUrl,
+      );
+      if (connected) {
+        debugPrint("Berhasil terhubung ke Spotify SDK Remote.");
+      } else {
+        debugPrint("Gagal terhubung ke Spotify SDK Remote (dikembalikan false oleh SDK).");
+      }
+      return connected;
+    } catch (e) {
+      debugPrint("Error saat menghubungkan Spotify SDK Remote: $e");
+      return false;
+    }
+  }
 }
 

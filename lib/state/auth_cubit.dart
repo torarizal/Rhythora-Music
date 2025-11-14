@@ -42,4 +42,6 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   checkInitialAuthStatus() {}
+
+
 }

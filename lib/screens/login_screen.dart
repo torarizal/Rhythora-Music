@@ -1,6 +1,7 @@
 import 'dart:ui'; // Diperlukan untuk ImageFilter.blur
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rhythora/services/auth_service.dart';
 import '../main.dart'; // Untuk mengakses variabel warna (kPrimaryColor, dll)
 import '../state/login_cubit.dart';
 import '../state/login_state.dart';
@@ -14,12 +15,30 @@ class LoginScreen extends StatelessWidget {
     // BlocListener digunakan untuk "melakukan aksi" (seperti pindah halaman)
     // saat state berubah.
     return BlocListener<LoginCubit, LoginState>(
-      listener: (context, state) {
+      listener: (context, state) async { // Jadikan listener async
         if (state is LoginSuccess) {
-          // Jika login sukses, pindah ke HomeScreen
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomePage()),
-          );
+          // Jika login premium, coba hubungkan SDK sebelum pindah halaman
+          if (state.authStatus == AuthStatus.premium) {
+            final authService = context.read<AuthService>();
+            final connected = await authService.connectSdk();
+            if (!connected && context.mounted) {
+              // Tampilkan pesan jika gagal terhubung ke SDK
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Gagal terhubung ke aplikasi Spotify. Pastikan Spotify aktif."),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          }
+          
+          // Jika login sukses (apapun statusnya), pindah ke HomeScreen
+          if (context.mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const HomePage()),
+            );
+          }
+
         } else if (state is LoginFailure) {
           // Jika login gagal, tampilkan pesan error
           ScaffoldMessenger.of(context).showSnackBar(
