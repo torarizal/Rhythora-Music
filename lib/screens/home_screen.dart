@@ -9,7 +9,6 @@ import 'package:rhythora/state/navigation_state.dart';
 import 'package:rhythora/state/playlist_cubit.dart';
 import 'package:rhythora/state/playlist_state.dart';
 import 'package:rhythora/widgets/loading_skeletons.dart';
-import 'package:rhythora/screens/collection_screen.dart';
 import '../state/search_cubit.dart';
 import '../state/search_state.dart';
 import '../state/player_cubit.dart';
@@ -18,13 +17,6 @@ import '../models/track_model.dart';
 import 'player_screens.dart';
 import 'package:flutter/foundation.dart';
 // -----------------------------
-
-enum SortOption {
-  trackName,
-  artistName,
-  albumName,
-  duration,
-}
 
 // --- WARNA DARI UI BARU ANDA ---
 const Color kBackgroundColor = Color(0xFF121212);
@@ -133,35 +125,33 @@ class AppSidebar extends StatelessWidget {
                 child: Divider(color: kBorderColor), // Garis pemisah
               ),
 
-              // --- Daftar Putar (Hapus Dummy) ---
-              const Text(
-                'Daftar Putar',
-                style: TextStyle(
-                    color: kMutedTextColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              //tester update fix
-              Expanded(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: const [
-                    Padding(
-                      // Contoh item playlist
-                      padding: EdgeInsets.symmetric(vertical: 6.0),
-                      child: Text('Lagu Favorit',
-                          style: TextStyle(color: kMutedTextColor)),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(vertical: 6.0),
-                      child: Text('Mix Harian 1',
-                          style: TextStyle(color: kMutedTextColor)),
-                    ),
-                    // ... tambahkan item lain jika perlu
-                  ],
-                ),
-              ),
+          // --- Daftar Putar (Hapus Dummy) ---
+          const Text(
+            'Daftar Putar',
+            style: TextStyle(
+              color: kMutedTextColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 16
+            ),
+          ),
+          const SizedBox(height: 16),
+            //tester update fix
+          Expanded(
+            child: ListView(
+              shrinkWrap: true,
+              children: const [
+                 Padding( // Contoh item playlist
+                   padding: EdgeInsets.symmetric(vertical: 6.0),
+                   child: Text('Lagu Favorit', style: TextStyle(color: kMutedTextColor)),
+                 ),
+                 Padding(
+                   padding: EdgeInsets.symmetric(vertical: 6.0),
+                   child: Text('Mix Harian 1', style: TextStyle(color: kMutedTextColor)),
+                 ),
+                 // ... tambahkan item lain jika perlu
+              ],
+            ),
+          ),
             ],
           ),
         );
@@ -220,100 +210,11 @@ class MainContent extends StatelessWidget {
   MainContent({super.key});
 
   final TextEditingController _searchController = TextEditingController();
-  List<Track> _trendingTracks = []; // Untuk data slider
-  List<Track> _homeRecommendations = [];
-  bool _isLoadingHome = true;
-  String? _homeError;
-
-  // Sort and filter state
-  SortOption _sortOption = SortOption.trackName;
-  bool _isAscending = true;
-  String _artistFilter = '';
-  String _albumFilter = '';
-
-  List<Track> _sortAndFilterTracks(List<Track> tracks) {
-    // Apply filters
-    List<Track> filteredTracks = tracks.where((track) {
-      final matchesArtist = _artistFilter.isEmpty || track.artistName.toLowerCase().contains(_artistFilter.toLowerCase());
-      final matchesAlbum = _albumFilter.isEmpty || (track.albumName?.toLowerCase().contains(_albumFilter.toLowerCase()) ?? false);
-      return matchesArtist && matchesAlbum;
-    }).toList();
-
-    // Apply sorting
-    filteredTracks.sort((a, b) {
-      int compare = 0;
-      switch (_sortOption) {
-        case SortOption.trackName:
-          compare = a.name.compareTo(b.name);
-          break;
-        case SortOption.artistName:
-          compare = a.artistName.compareTo(b.artistName);
-          break;
-        case SortOption.albumName:
-          compare = (a.albumName ?? '').compareTo(b.albumName ?? '');
-          break;
-        case SortOption.duration:
-          compare = (a.durationMs ?? 0).compareTo(b.durationMs ?? 0);
-          break;
-      }
-      return _isAscending ? compare : -compare;
-    });
-
-    return filteredTracks;
-  }
-
- @override
-  void initState() {
-    super.initState();
-    _loadHomeRecommendations();
-  }
-
- @override
-  void dispose() {
-    _scrollController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadHomeRecommendations() async {
-    setState(() {
-      _isLoadingHome = true;
-      _homeError = null;
-    });
-    try {
-      if (!mounted) return;
-      final spotifyService = RepositoryProvider.of<SpotifyService>(context);
-      final List<Track> fetchedTrending = await spotifyService.searchTracks('trending songs indonesia');
-      final List<Track> recommendedTracks = await spotifyService.searchTracks('new releases indonesia');
-
-       if (mounted) {
-        setState(() {
-          _homeRecommendations = recommendedTracks;
-          _trendingTracks = fetchedTrending.take(5).toList();
-          _isLoadingHome = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error loading home recommendations: $e");
-       if (mounted) {
-        setState(() {
-          _homeError = "Gagal memuat rekomendasi."; // Pesan lebih singkat
-          _isLoadingHome = false;
-        });
-       }
-    }
-  }
-
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NavigationCubit, NavigationState>(
       builder: (context, state) {
-        // Hapus CustomScrollView jika halaman baru sudah punya scaffold sendiri
-        if (state.page == NavPage.library) {
-          return _buildLibraryPageContent();
-        }
-
         return CustomScrollView(
           slivers: [
             if (state.page == NavPage.search)
@@ -355,7 +256,8 @@ class MainContent extends StatelessWidget {
               _buildHomePageContent(),
             if (state.page == NavPage.search)
               _buildSearchPageContent(),
-            // Hapus pemanggilan lama
+            if (state.page == NavPage.library)
+              _buildLibraryPageContent(),
           ],
         );
       },
@@ -526,7 +428,75 @@ class MainContent extends StatelessWidget {
   }
 
   Widget _buildLibraryPageContent() {
-    return const CollectionScreen();
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+      sliver: BlocBuilder<PlaylistCubit, PlaylistState>(
+        builder: (context, state) {
+          if (state is PlaylistLoading || state is PlaylistInitial) {
+            return const LibraryLoadingSkeleton();
+          }
+          if (state is PlaylistError) {
+            return SliverFillRemaining(
+              child: Center(child: Text(state.message, style: const TextStyle(color: Colors.red))),
+            );
+          }
+          if (state is PlaylistLoaded) {
+            return SliverGrid(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 220.0,
+                mainAxisSpacing: 24.0,
+                crossAxisSpacing: 24.0,
+                childAspectRatio: 0.8,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final playlist = state.playlists[index];
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AspectRatio(
+                        aspectRatio: 1,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: kCardHoverColor,
+                            borderRadius: BorderRadius.circular(8),
+                            image: playlist.imageUrl != null
+                                ? DecorationImage(
+                                    image: NetworkImage(playlist.imageUrl!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: playlist.imageUrl == null
+                              ? const Center(child: Icon(Icons.music_note, size: 40, color: kMutedTextColor))
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        playlist.name,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Playlist • ${playlist.ownerName}',
+                        style: const TextStyle(color: kMutedTextColor, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  );
+                },
+                childCount: state.playlists.length,
+              ),
+            );
+          }
+          return const SliverToBoxAdapter(child: SizedBox.shrink());
+        },
+      ),
+    );
   }
 
   Widget _buildSearchResults(SearchState state) {
@@ -537,8 +507,7 @@ class MainContent extends StatelessWidget {
        );
      }
      if (state is SearchLoaded) {
-        final sortedAndFilteredTracks = _sortAndFilterTracks(state.tracks);
-        if (sortedAndFilteredTracks.isEmpty) {
+        if (state.tracks.isEmpty) {
           return const SliverFillRemaining(
             child: Center(child: Text('Tidak ada hasil ditemukan.', style: TextStyle(color: kMutedTextColor))),
           );
@@ -551,100 +520,6 @@ class MainContent extends StatelessWidget {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: Colors.white),
               ),
              const SizedBox(height: 20),
-             // Sort and Filter Controls
-             Row(
-               children: [
-                 Expanded(
-                   child: DropdownButtonFormField<SortOption>(
-                     value: _sortOption,
-                     decoration: InputDecoration(
-                       labelText: 'Urutkan',
-                       labelStyle: const TextStyle(color: kMutedTextColor),
-                       filled: true,
-                       fillColor: kCardHoverColor,
-                       border: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(8.0),
-                         borderSide: BorderSide.none,
-                       ),
-                     ),
-                     dropdownColor: kCardHoverColor,
-                     style: const TextStyle(color: Colors.white),
-                     items: const [
-                       DropdownMenuItem(value: SortOption.trackName, child: Text('Nama Lagu')),
-                       DropdownMenuItem(value: SortOption.artistName, child: Text('Artis')),
-                       DropdownMenuItem(value: SortOption.albumName, child: Text('Album')),
-                       DropdownMenuItem(value: SortOption.duration, child: Text('Durasi')),
-                     ],
-                     onChanged: (value) {
-                       if (value != null) {
-                         setState(() {
-                           _sortOption = value;
-                         });
-                       }
-                     },
-                   ),
-                 ),
-                 const SizedBox(width: 16),
-                 IconButton(
-                   icon: Icon(_isAscending ? Icons.arrow_upward : Icons.arrow_downward, color: Colors.white),
-                   onPressed: () {
-                     setState(() {
-                       _isAscending = !_isAscending;
-                     });
-                   },
-                 ),
-               ],
-             ),
-             const SizedBox(height: 16),
-             // Filter Text Fields
-             Row(
-               children: [
-                 Expanded(
-                   child: TextField(
-                     style: const TextStyle(color: Colors.white),
-                     decoration: InputDecoration(
-                       hintText: 'Filter artis...',
-                       hintStyle: const TextStyle(color: kMutedTextColor),
-                       filled: true,
-                       fillColor: kCardHoverColor,
-                       contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                       border: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(8.0),
-                         borderSide: BorderSide.none,
-                       ),
-                     ),
-                     onChanged: (value) {
-                       setState(() {
-                         _artistFilter = value;
-                       });
-                     },
-                   ),
-                 ),
-                 const SizedBox(width: 16),
-                 Expanded(
-                   child: TextField(
-                     style: const TextStyle(color: Colors.white),
-                     decoration: InputDecoration(
-                       hintText: 'Filter album...',
-                       hintStyle: const TextStyle(color: kMutedTextColor),
-                       filled: true,
-                       fillColor: kCardHoverColor,
-                       contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                       border: OutlineInputBorder(
-                         borderRadius: BorderRadius.circular(8.0),
-                         borderSide: BorderSide.none,
-                       ),
-                     ),
-                     onChanged: (value) {
-                       setState(() {
-                         _albumFilter = value;
-                       });
-                     },
-                   ),
-                 ),
-               ],
-             ),
-             const SizedBox(height: 20),
              LayoutBuilder(
                 builder: (context, constraints) {
                   final bool isDesktop = constraints.maxWidth > 600;
@@ -655,9 +530,9 @@ class MainContent extends StatelessWidget {
              ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: sortedAndFilteredTracks.length,
+                itemCount: state.tracks.length,
                 itemBuilder: (context, index) {
-                  final track = sortedAndFilteredTracks[index];
+                  final track = state.tracks[index];
                   // Pastikan context tersedia sebelum memanggil read
                   // InkWell sudah ada di dalam SongItem, tidak perlu di sini
                   return SongItem(
@@ -984,7 +859,7 @@ class _MusicPlayerBar extends StatefulWidget {
                      IconButton(icon: Icon(Icons.queue_music, color: kMutedTextColor, size: 20), onPressed: () {}),
                     Icon(Icons.volume_up, color: kMutedTextColor, size: 20),
                     // Gunakan Expanded di dalam Flexible Row agar slider mengambil sisa ruang
-                    Expanded(
+                    Flexible(
                       child: SliderTheme(
                         data: SliderTheme.of(context).copyWith(trackHeight: 4.0, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), overlayShape: const RoundSliderOverlayShape(overlayRadius: 0), activeTrackColor: Colors.white, inactiveTrackColor: kBorderColor, thumbColor: Colors.white), 
                         child: Slider(
