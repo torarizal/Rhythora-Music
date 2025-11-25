@@ -5,7 +5,7 @@ import '../models/playlist_model.dart';
 import '../models/track_model.dart';
 import 'auth_service.dart'; // Masih perlu untuk cek status & refresh
 
-class SpotifyService {
+class SpotifyService { 
   final String _baseUrl = 'https://api.spotify.com/v1';
   final AuthService _authService; // Perlu untuk refresh token
   final _storage = const FlutterSecureStorage(); // Tambahkan storage

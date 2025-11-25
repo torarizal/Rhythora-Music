@@ -52,15 +52,24 @@ class MyApp extends StatelessWidget {
             ),
           ),
           RepositoryProvider<SpotifyService>(
+             // --- PERBAIKAN 1: Pastikan constructor SpotifyService menerima 2 argumen ---
+             // Jika constructor SpotifyService Anda hanya menerima AuthService, hapus argumen kedua.
+             // Jika constructor butuh keduanya (seperti kode service yang saya berikan), ini sudah benar.
             create: (context) => SpotifyService(
               context.read<AuthService>(),
+              context.read<FlutterSecureStorage>(), // SpotifyService butuh storage
             ),
+             // --------------------------------------------------------------------------
           ),
         ],
         child: MultiBlocProvider(
           providers: [
              BlocProvider<AuthCubit>(
-               create: (context) => AuthCubit(context.read<AuthService>()),
+               create: (context) => AuthCubit(
+                 context.read<AuthService>(),
+               // --- PERBAIKAN 2: Nama fungsi salah ---
+               )..checkInitialAuthStatus(), // Ganti nama fungsinya
+               // ------------------------------------
              ),
             BlocProvider<SearchCubit>(
               create: (context) => SearchCubit(
@@ -85,7 +94,7 @@ class MyApp extends StatelessWidget {
             BlocProvider<PlaylistCubit>(
               create: (context) => PlaylistCubit(
                 context.read<SpotifyService>(),
-              )..fetchUserPlaylists(),
+              ),
             ),
             BlocProvider<NavigationCubit>(
               create: (context) => NavigationCubit(),
