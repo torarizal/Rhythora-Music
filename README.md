@@ -47,4 +47,4 @@ Didesain dengan antarmuka minimalis namun elegan, **Rythora** menghadirkan nuans
 MyMusic terhubung dengan **Spotify Web API**, yang menyediakan jutaan database lagu, artis, dan album.  
 Proses autentikasi dilakukan menggunakan **OAuth 2.0** agar pengguna bisa login menggunakan akun Spotify mereka.
 
-
+--update Test--
