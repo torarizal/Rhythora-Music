@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart'; // For opening URLs
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // For social media icons
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -40,36 +42,50 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> {
       "name": "Dev Satu",
       "role": "Lead Developer",
       "image": "assets/images/tora.jpeg",
+      "githubUrl": "https://github.com/DevSatu",
+      "instagramUrl": "https://instagram.com/devsatu",
     },
     {
       "name": "Dev Dua",
       "role": "Frontend Engineer",
       "image": "assets/images/lintang.jpeg",
+      "githubUrl": "https://github.com/DevDua",
+      "instagramUrl": "https://instagram.com/devdua",
     },
     {
       "name": "Dev Tiga",
       "role": "Backend Engineer",
       "image": "assets/images/farid.jpeg",
+      "githubUrl": "https://github.com/DevTiga",
+      "instagramUrl": "https://instagram.com/devtiga",
     },
     {
       "name": "Dev Empat",
       "role": "UI/UX Designer",
       "image": "assets/images/tiara.jpeg",
+      "githubUrl": "https://github.com/DevEmpat",
+      "instagramUrl": "https://instagram.com/devempat",
     },
     {
       "name": "Dev Lima",
       "role": "Mobile Developer",
       "image": "assets/images/aurora.jpeg",
+      "githubUrl": "https://github.com/DevLima",
+      "instagramUrl": "https://instagram.com/devlima",
     },
     {
       "name": "Dev Enam",
       "role": "QA Engineer",
       "image": "assets/images/amel.jpeg",
+      "githubUrl": "https://github.com/DevEnam",
+      "instagramUrl": "https://instagram.com/devenam",
     },
     {
       "name": "Dev Tujuh",
       "role": "DevOps Engineer",
       "image": "assets/images/kirana.jpeg",
+      "githubUrl": "https://github.com/DevTujuh",
+      "instagramUrl": "https://instagram.com/devtujuh",
     },
   ];
 
@@ -195,6 +211,8 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> {
                             name: entry.value['name']!,
                             role: entry.value['role']!,
                             imageUrl: entry.value['image']!,
+                            githubUrl: entry.value['githubUrl']!,
+                            instagramUrl: entry.value['instagramUrl']!,
                             width: isMobile ? double.infinity : 250,
                             delay: entry.key * 100,
                           );
@@ -240,6 +258,8 @@ class DeveloperCard extends StatefulWidget {
   final String imageUrl;
   final double width;
   final int delay;
+  final String githubUrl;
+  final String instagramUrl;
 
   const DeveloperCard({
     super.key,
@@ -248,6 +268,8 @@ class DeveloperCard extends StatefulWidget {
     required this.imageUrl,
     required this.width,
     required this.delay,
+    this.githubUrl = "",
+    this.instagramUrl = "",
   });
 
   @override
@@ -256,6 +278,15 @@ class DeveloperCard extends StatefulWidget {
 
 class _DeveloperCardState extends State<DeveloperCard> {
   bool _isHovered = false;
+
+  Future<void> _launchURL(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint('Could not launch $url');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -295,6 +326,23 @@ class _DeveloperCardState extends State<DeveloperCard> {
                   children: [
                     Text(widget.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                     Text(widget.role, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    const SizedBox(height: 8), // Add some spacing
+                    Row( // Social media icons
+                      children: [
+                        if (widget.githubUrl.isNotEmpty) // Conditionally show GitHub icon
+                          IconButton(
+                            icon: const Icon(FontAwesomeIcons.github, color: Colors.white70, size: 20),
+                            onPressed: () => _launchURL(widget.githubUrl),
+                            tooltip: "GitHub",
+                          ),
+                        if (widget.instagramUrl.isNotEmpty) // Conditionally show Instagram icon
+                          IconButton(
+                            icon: const Icon(FontAwesomeIcons.instagram, color: Colors.white70, size: 20),
+                            onPressed: () => _launchURL(widget.instagramUrl),
+                            tooltip: "Instagram",
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
