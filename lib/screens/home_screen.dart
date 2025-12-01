@@ -114,10 +114,8 @@ class AppSidebar extends StatelessWidget {
               NavItem(
                 icon: Icons.info_outline, title: 'Tentang Kami', isActive: false,
                 onTap: () {
-                  // Pindah halaman menggunakan GoRouter
-                  context.push('/about'); 
-                  if (Scaffold.maybeOf(context)?.hasDrawer == true && Scaffold.of(context).isDrawerOpen) Navigator.pop(context);
-                },
+                context.read<NavigationCubit>().goToAbout();
+              }
               ),
               // --------------------------------------
 
@@ -183,6 +181,8 @@ class MainContent extends StatelessWidget {
             if (state.page == NavPage.home) _buildHomePageContent(),
             if (state.page == NavPage.search) _buildSearchPageContent(),
             if (state.page == NavPage.library) _buildLibraryPageContent(),
+            if (state.page == NavPage.about) _buildAboutScreenContent(),
+
           ],
         );
       },
@@ -282,6 +282,8 @@ class MainContent extends StatelessWidget {
       if (state is SearchError) return SliverFillRemaining(child: Center(child: Text('Error: ${state.message}', style: const TextStyle(color: Colors.red))));
       return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
+  
+  _buildAboutScreenContent() {}
 }
 
 class SongListHeader extends StatelessWidget {

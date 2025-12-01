@@ -1,11 +1,12 @@
 import 'dart:ui'; // Diperlukan untuk ImageFilter.blur
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rhythora/services/auth_service.dart';
 import '../main.dart'; // Untuk mengakses variabel warna (kPrimaryColor, dll)
 import '../state/login_cubit.dart';
 import '../state/login_state.dart';
-import 'home_screen.dart' hide kBackgroundColor, kBorderColor; // Layar tujuan setelah login sukses
+// import 'home_screen.dart' hide kBackgroundColor, kBorderColor; // Layar tujuan setelah login sukses - TIDAK DIPERLUKAN LAGI
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -34,9 +35,7 @@ class LoginScreen extends StatelessWidget {
           
           // Jika login sukses (apapun statusnya), pindah ke HomeScreen
           if (context.mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const HomePage()),
-            );
+            context.go('/home');
           }
 
         } else if (state is LoginFailure) {

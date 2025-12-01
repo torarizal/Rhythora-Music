@@ -51,7 +51,7 @@ final GoRouter _router = GoRouter(
       builder: (context, state) => const HomePage(),
     ),
     GoRoute(
-      path: '/about', // <-- Ini URL untuk About Us
+      path: '/about',
       builder: (context, state) => const AboutScreen(),
     ),
   ],

@@ -3,10 +3,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:go_router/go_router.dart';
+
 // --- GANTI INI ---
 // Ganti 'login_screen.dart' dengan file login Anda
 // Ganti 'LoginScreen()' dengan class login Anda
-import 'login_screen.dart'; // <--- ASUMSI NAMA FILE LOGIN ANDA
+// import 'login_screen.dart'; // <--- ASUMSI NAMA FILE LOGIN ANDA - SUDAH TIDAK DIPERLUKAN
 // -----------------
 
 // Konfigurasi Warna
@@ -155,19 +157,10 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _navigateToLogin() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(), // <--- GANTI KE NAMA CLASS LOGIN ANDA
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 800),
-      ),
-    );
+    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge); <-- TIDAK PERLU LAGI
+    if (mounted) {
+      context.go('/login');
+    }
   }
 
   @override

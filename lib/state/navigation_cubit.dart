@@ -7,4 +7,5 @@ class NavigationCubit extends Cubit<NavigationState> {
   void goToHome() => emit(const NavigationState(NavPage.home));
   void goToSearch() => emit(const NavigationState(NavPage.search));
   void goToLibrary() => emit(const NavigationState(NavPage.library));
+  void goToAbout() => emit(const NavigationState(NavPage.about));
 }
