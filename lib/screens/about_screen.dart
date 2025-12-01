@@ -18,11 +18,12 @@ class AboutScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.go('/home'), // Kembali ke Home
         ),
-        title: const Text("Tentang Kami", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Tentang Kami",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
-      body: const SingleChildScrollView(
-        child: RythoraAboutContent(),
-      ),
+      body: const SingleChildScrollView(child: RythoraAboutContent()),
     );
   }
 }
@@ -39,53 +40,53 @@ class RythoraAboutContent extends StatefulWidget {
 class _RythoraAboutContentState extends State<RythoraAboutContent> {
   final List<Map<String, String>> developers = [
     {
-      "name": "Dev Satu",
+      "name": "Tora Rizal Pratama",
       "role": "Lead Developer",
       "image": "assets/images/tora.jpeg",
       "githubUrl": "https://github.com/DevSatu",
-      "instagramUrl": "https://instagram.com/devsatu",
+      "instagramUrl": "https://www.instagram.com/mas_komting/",
     },
     {
-      "name": "Dev Dua",
+      "name": "Hafiyyan Lintang Arizaki",
       "role": "Frontend Engineer",
       "image": "assets/images/lintang.jpeg",
       "githubUrl": "https://github.com/DevDua",
-      "instagramUrl": "https://instagram.com/devdua",
+      "instagramUrl": "https://www.instagram.com/hafiarizaki/",
     },
     {
-      "name": "Dev Tiga",
+      "name": "Farid Ade Novian",
       "role": "Backend Engineer",
       "image": "assets/images/farid.jpeg",
       "githubUrl": "https://github.com/DevTiga",
-      "instagramUrl": "https://instagram.com/devtiga",
+      "instagramUrl": "https://www.instagram.com/fnovian_/",
     },
     {
-      "name": "Dev Empat",
+      "name": "Tiara Zahrofi Ifadhah",
       "role": "UI/UX Designer",
       "image": "assets/images/tiara.jpeg",
       "githubUrl": "https://github.com/DevEmpat",
-      "instagramUrl": "https://instagram.com/devempat",
+      "instagramUrl": "https://www.instagram.com/tiarazahrofi/",
     },
     {
-      "name": "Dev Lima",
+      "name": "Aurora Ilmannafia",
       "role": "Mobile Developer",
       "image": "assets/images/aurora.jpeg",
       "githubUrl": "https://github.com/DevLima",
-      "instagramUrl": "https://instagram.com/devlima",
+      "instagramUrl": "https://www.instagram.com/auroraanafia/",
     },
     {
-      "name": "Dev Enam",
+      "name": "Amelanov Destyawanda",
       "role": "QA Engineer",
       "image": "assets/images/amel.jpeg",
       "githubUrl": "https://github.com/DevEnam",
-      "instagramUrl": "https://instagram.com/devenam",
+      "instagramUrl": "https://www.instagram.com/meyaalav__/",
     },
     {
-      "name": "Dev Tujuh",
+      "name": "Kirana Shofa Dzakiyyah",
       "role": "DevOps Engineer",
       "image": "assets/images/kirana.jpeg",
       "githubUrl": "https://github.com/DevTujuh",
-      "instagramUrl": "https://instagram.com/devtujuh",
+      "instagramUrl": "https://www.instagram.com/kiranx_00/",
     },
   ];
 
@@ -94,7 +95,7 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool isMobile = constraints.maxWidth < 800;
-        
+
         return Column(
           children: [
             SizedBox(
@@ -167,7 +168,11 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> {
                       const FadeInAnimation(
                         child: Text(
                           "Fitur Unggulan",
-                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 64),
@@ -176,9 +181,24 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> {
                         runSpacing: 24,
                         alignment: WrapAlignment.center,
                         children: [
-                          _buildFeatureCard(Icons.bolt, "Cepat & Ringan", "Optimasi performa tinggi.", isMobile),
-                          _buildFeatureCard(Icons.wifi_off, "Mode Offline", "Dengarkan tanpa internet.", isMobile),
-                          _buildFeatureCard(Icons.mic, "Lirik Lagu", "Bernyanyi bersama lirik.", isMobile),
+                          _buildFeatureCard(
+                            Icons.bolt,
+                            "Cepat & Ringan",
+                            "Optimasi performa tinggi.",
+                            isMobile,
+                          ),
+                          _buildFeatureCard(
+                            Icons.wifi_off,
+                            "Mode Offline",
+                            "Dengarkan tanpa internet.",
+                            isMobile,
+                          ),
+                          _buildFeatureCard(
+                            Icons.mic,
+                            "Lirik Lagu",
+                            "Bernyanyi bersama lirik.",
+                            isMobile,
+                          ),
                         ],
                       ),
                     ],
@@ -198,7 +218,11 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> {
                       const FadeInAnimation(
                         child: Text(
                           "Tim Developer",
-                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 64),
@@ -226,11 +250,16 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> {
             const SizedBox(height: 100),
           ],
         );
-      }
+      },
     );
   }
 
-  Widget _buildFeatureCard(IconData icon, String title, String desc, bool isMobile) {
+  Widget _buildFeatureCard(
+    IconData icon,
+    String title,
+    String desc,
+    bool isMobile,
+  ) {
     return Container(
       width: isMobile ? double.infinity : 300,
       padding: const EdgeInsets.all(32),
@@ -243,9 +272,20 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> {
         children: [
           Icon(icon, color: Colors.white, size: 32),
           const SizedBox(height: 16),
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(desc, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[400])),
+          Text(
+            desc,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[400]),
+          ),
         ],
       ),
     );
@@ -315,8 +355,17 @@ class _DeveloperCardState extends State<DeveloperCard> {
                   widget.imageUrl,
                   fit: BoxFit.cover,
                   color: _isHovered ? null : Colors.white.withOpacity(0.2),
-                  colorBlendMode: _isHovered ? BlendMode.dst : BlendMode.saturation,
-                  errorBuilder: (ctx, _, __) => Container(color: Colors.grey[900], child: const Icon(Icons.person, size: 50, color: Colors.white24)),
+                  colorBlendMode: _isHovered
+                      ? BlendMode.dst
+                      : BlendMode.saturation,
+                  errorBuilder: (ctx, _, __) => Container(
+                    color: Colors.grey[900],
+                    child: const Icon(
+                      Icons.person,
+                      size: 50,
+                      color: Colors.white24,
+                    ),
+                  ),
                 ),
               ),
               Padding(
@@ -324,20 +373,43 @@ class _DeveloperCardState extends State<DeveloperCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(widget.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(widget.role, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text(
+                      widget.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      widget.role,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
                     const SizedBox(height: 8), // Add some spacing
-                    Row( // Social media icons
+                    Row(
+                      // Social media icons
                       children: [
-                        if (widget.githubUrl.isNotEmpty) // Conditionally show GitHub icon
+                        if (widget
+                            .githubUrl
+                            .isNotEmpty) // Conditionally show GitHub icon
                           IconButton(
-                            icon: const Icon(FontAwesomeIcons.github, color: Colors.white70, size: 20),
+                            icon: const Icon(
+                              FontAwesomeIcons.github,
+                              color: Colors.white70,
+                              size: 20,
+                            ),
                             onPressed: () => _launchURL(widget.githubUrl),
                             tooltip: "GitHub",
                           ),
-                        if (widget.instagramUrl.isNotEmpty) // Conditionally show Instagram icon
+                        if (widget
+                            .instagramUrl
+                            .isNotEmpty) // Conditionally show Instagram icon
                           IconButton(
-                            icon: const Icon(FontAwesomeIcons.instagram, color: Colors.white70, size: 20),
+                            icon: const Icon(
+                              FontAwesomeIcons.instagram,
+                              color: Colors.white70,
+                              size: 20,
+                            ),
                             onPressed: () => _launchURL(widget.instagramUrl),
                             tooltip: "Instagram",
                           ),
@@ -364,7 +436,8 @@ class FadeInAnimation extends StatefulWidget {
   State<FadeInAnimation> createState() => _FadeInAnimationState();
 }
 
-class _FadeInAnimationState extends State<FadeInAnimation> with SingleTickerProviderStateMixin {
+class _FadeInAnimationState extends State<FadeInAnimation>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _opacity;
   late Animation<Offset> _translate;
@@ -372,17 +445,34 @@ class _FadeInAnimationState extends State<FadeInAnimation> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
-    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _translate = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    Future.delayed(Duration(milliseconds: widget.delay), () { if (mounted) _controller.forward(); });
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _opacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _translate = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) _controller.forward();
+    });
   }
 
   @override
-  void dispose() { _controller.dispose(); super.dispose(); }
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
-  Widget build(BuildContext context) => FadeTransition(opacity: _opacity, child: SlideTransition(position: _translate, child: widget.child));
+  Widget build(BuildContext context) => FadeTransition(
+    opacity: _opacity,
+    child: SlideTransition(position: _translate, child: widget.child),
+  );
 }
 
 extension BlurExtension on Widget {
