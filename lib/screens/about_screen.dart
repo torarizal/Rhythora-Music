@@ -37,37 +37,37 @@ class RythoraAboutContent extends StatefulWidget {
 class _RythoraAboutContentState extends State<RythoraAboutContent> {
   final List<Map<String, String>> developers = [
     {
-      "name": "Dev Satu",
+      "name": "Tora Rixal Pratama",
       "role": "Lead Developer",
       "image": "assets/images/tora.jpeg",
     },
     {
-      "name": "Dev Dua",
+      "name": "Hafiyyan Lintang Arizaki",
       "role": "Frontend Engineer",
       "image": "assets/images/lintang.jpeg",
     },
     {
-      "name": "Dev Tiga",
+      "name": "Farid Ade Novian",
       "role": "Backend Engineer",
       "image": "assets/images/farid.jpeg",
     },
     {
-      "name": "Dev Empat",
+      "name": "Tiara Zahrofi ifdhah",
       "role": "UI/UX Designer",
       "image": "assets/images/tiara.jpeg",
     },
     {
-      "name": "Dev Lima",
+      "name": "Aurora Ilmannafia",
       "role": "Mobile Developer",
       "image": "assets/images/aurora.jpeg",
     },
     {
-      "name": "Dev Enam",
+      "name": "Amelanov Destyawanda",
       "role": "QA Engineer",
       "image": "assets/images/amel.jpeg",
     },
     {
-      "name": "Dev Tujuh",
+      "name": "Kirana Shofa Dzakyya",
       "role": "DevOps Engineer",
       "image": "assets/images/kirana.jpeg",
     },
