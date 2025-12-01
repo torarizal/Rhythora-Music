@@ -21,8 +21,17 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Check Flutter version
+        run: flutter --version
+
+      - name: List project files
+        run: ls -R
+
+      - name: Build APK (verbose)
+        run: flutter build apk --release -v
+
+      - name: Build APK (Debug)
+        run: flutter build apk --debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
