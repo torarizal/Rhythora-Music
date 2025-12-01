@@ -16,9 +16,7 @@ import '../state/player_cubit.dart';
 import '../state/player_state.dart';
 import '../models/track_model.dart';
 import 'package:flutter/foundation.dart';
-// Import Halaman Detail Info
 import 'detail_screen.dart';
-
 // --- WARNA DARI UI BARU ANDA ---
 const Color kBackgroundColor = Color(0xFF121212);
 const Color kSidebarColor = Colors.black;
@@ -138,7 +136,6 @@ class AppSidebar extends StatelessWidget {
                   }
                 },
               ),
-
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24.0),
                 child: Divider(color: kBorderColor, thickness: 0.5),
@@ -316,6 +313,7 @@ class MainContent extends StatelessWidget {
               _buildSearchPageContent(),
             if (state.page == NavPage.library)
               _buildLibraryPageContent(),
+            
           ],
         );
       },
@@ -817,7 +815,6 @@ class _MusicPlayerBar extends StatefulWidget {
  class _MusicPlayerBarState extends State<_MusicPlayerBar> {
    // State Visual Slider
    double _sliderValue = 0.0;
-   bool _isDraggingSlider = false;
    
    // State Audio Simulasi
    bool _isPlaying = false; 
@@ -1133,7 +1130,6 @@ class _MusicPlayerBar extends StatefulWidget {
                                 // Fitur Seek (Geser)
                                 onChanged: (value) {
                                   setState(() {
-                                    _isDraggingSlider = true;
                                     _sliderValue = value;
                                     // Hitung posisi baru berdasarkan persentase geser
                                     if (_totalDuration.inMilliseconds > 0) {
@@ -1143,7 +1139,6 @@ class _MusicPlayerBar extends StatefulWidget {
                                 },
                                 onChangeEnd: (value) {
                                   setState(() {
-                                    _isDraggingSlider = false;
                                     // Timer lanjut dari posisi baru
                                   });
                                 },
