@@ -39,37 +39,37 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> {
     {
       "name": "Dev Satu",
       "role": "Lead Developer",
-      "image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop&q=80",
+      "image": "assets/images/tora.jpeg",
     },
     {
       "name": "Dev Dua",
       "role": "Frontend Engineer",
-      "image": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&h=500&fit=crop&q=80",
+      "image": "assets/images/lintang.jpeg",
     },
     {
       "name": "Dev Tiga",
       "role": "Backend Engineer",
-      "image": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&h=500&fit=crop&q=80",
+      "image": "assets/images/farid.jpeg",
     },
     {
       "name": "Dev Empat",
       "role": "UI/UX Designer",
-      "image": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&h=500&fit=crop&q=80",
+      "image": "assets/images/tiara.jpeg",
     },
     {
       "name": "Dev Lima",
       "role": "Mobile Developer",
-      "image": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=500&h=500&fit=crop&q=80",
+      "image": "assets/images/aurora.jpeg",
     },
     {
       "name": "Dev Enam",
       "role": "QA Engineer",
-      "image": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&h=500&fit=crop&q=80",
+      "image": "assets/images/amel.jpeg",
     },
     {
       "name": "Dev Tujuh",
       "role": "DevOps Engineer",
-      "image": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&h=500&fit=crop&q=80",
+      "image": "assets/images/kirana.jpeg",
     },
   ];
 
