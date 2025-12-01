@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum NavPage { home, search, library }
+enum NavPage { home, search, library, about }
 
 class NavigationState extends Equatable {
   final NavPage page;
