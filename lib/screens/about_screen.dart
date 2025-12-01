@@ -14,7 +14,7 @@ class AboutScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(), // Kembali ke Home
+          onPressed: () => context.go('/home'), // Kembali ke Home
         ),
         title: const Text("Tentang Kami", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),

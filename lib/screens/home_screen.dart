@@ -114,7 +114,7 @@ class AppSidebar extends StatelessWidget {
               NavItem(
                 icon: Icons.info_outline, title: 'Tentang Kami', isActive: false,
                 onTap: () {
-                context.read<NavigationCubit>().goToAbout();
+               context.go('/about');
               }
               ),
               // --------------------------------------
@@ -181,8 +181,6 @@ class MainContent extends StatelessWidget {
             if (state.page == NavPage.home) _buildHomePageContent(),
             if (state.page == NavPage.search) _buildSearchPageContent(),
             if (state.page == NavPage.library) _buildLibraryPageContent(),
-            if (state.page == NavPage.about) _buildAboutScreenContent(),
-
           ],
         );
       },
@@ -283,7 +281,7 @@ class MainContent extends StatelessWidget {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
   
-  _buildAboutScreenContent() {}
+
 }
 
 class SongListHeader extends StatelessWidget {
