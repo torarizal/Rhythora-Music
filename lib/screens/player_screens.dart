@@ -1,3 +1,4 @@
+import 'dart:async'; // Perlu ini untuk Timer
 import 'dart:ui';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -13,9 +14,19 @@ class TrackDetailScreen extends StatefulWidget {
 }
 
 class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProviderStateMixin {
-  double _sliderValue = 20.0;
+  // --- STATE AUDIO (SIMULASI) ---
   bool _isPlaying = false;
   bool _isLiked = false;
+  
+  // STATE BARU: Shuffle & Repeat
+  bool _isShuffleOn = false;
+  // 0: Off, 1: Repeat All, 2: Repeat One
+  int _repeatMode = 0; 
+
+  // Durasi & Posisi
+  Duration _position = Duration.zero; // Posisi saat ini (0:00)
+  Duration _duration = const Duration(minutes: 3, seconds: 45); // Total durasi (Dummy 3:45)
+  Timer? _timer; // Timer untuk jalan otomatis
 
   // Controller untuk animasi "Bernapas" (Shadow Album)
   late AnimationController _breathingController;
@@ -38,8 +49,7 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
       CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut),
     );
 
-    // Setup Animasi Background (Looping)
-    // Kita jalankan timer sederhana untuk mengubah alignment gradient
+    // Setup Animasi Background
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startBackgroundAnimation();
     });
@@ -52,24 +62,104 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
         _gradientBegin = _gradientBegin == Alignment.topLeft ? Alignment.bottomLeft : Alignment.topLeft;
         _gradientEnd = _gradientEnd == Alignment.bottomRight ? Alignment.topRight : Alignment.bottomRight;
       });
-      await Future.delayed(const Duration(seconds: 4)); // Ganti arah setiap 4 detik
+      await Future.delayed(const Duration(seconds: 4));
     }
   }
 
+  // --- LOGIKA PEMUTAR MUSIK ---
   void _togglePlay() {
     setState(() {
       _isPlaying = !_isPlaying;
       if (_isPlaying) {
         _breathingController.repeat(reverse: true);
+        _startTimer(); // Mulai timer berjalan
       } else {
         _breathingController.stop();
-        _breathingController.animateTo(0); // Reset ke posisi awal
+        _breathingController.animateTo(0);
+        _stopTimer(); // Hentikan timer
       }
     });
   }
 
+  // LOGIKA BARU: Toggle Shuffle
+  void _toggleShuffle() {
+    setState(() {
+      _isShuffleOn = !_isShuffleOn;
+    });
+    // Feedback visual (Snackbar) dummy
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_isShuffleOn ? "Shuffle On" : "Shuffle Off"),
+        duration: const Duration(milliseconds: 500),
+        backgroundColor: Colors.grey[900],
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // LOGIKA BARU: Toggle Repeat (Cycle 3 State)
+  void _toggleRepeat() {
+    setState(() {
+      _repeatMode = (_repeatMode + 1) % 3; // Cycle: 0 -> 1 -> 2 -> 0
+    });
+    
+    String msg = "";
+    if (_repeatMode == 0) msg = "Repeat Off";
+    if (_repeatMode == 1) msg = "Repeat All";
+    if (_repeatMode == 2) msg = "Repeat One";
+
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        duration: const Duration(milliseconds: 500),
+        backgroundColor: Colors.grey[900],
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        final seconds = _position.inSeconds + 1;
+        if (seconds < _duration.inSeconds) {
+          _position = Duration(seconds: seconds);
+        } else {
+          // Lagu selesai
+          if (_repeatMode == 2) { 
+             // Jika Repeat One, ulang dari awal dan tetap main
+             _position = Duration.zero;
+          } else {
+             // Jika tidak, stop (Simulasi sederhana)
+             _timer?.cancel();
+             _isPlaying = false;
+             _position = Duration.zero;
+             _breathingController.stop();
+             _breathingController.animateTo(0);
+          }
+        }
+      });
+    });
+  }
+
+  void _stopTimer() {
+    _timer?.cancel();
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$twoDigitMinutes:$twoDigitSeconds";
+  }
+  // ---------------------------
+
   @override
   void dispose() {
+    _timer?.cancel(); 
     _breathingController.dispose();
     super.dispose();
   }
@@ -97,8 +187,7 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
             ),
           ),
           
-          // 2. ANIMATED GRADIENT OVERLAY (Aurora Effect)
-          // Ini memberikan efek warna yang bergerak perlahan di atas gambar
+          // 2. ANIMATED GRADIENT OVERLAY
           AnimatedContainer(
             duration: const Duration(seconds: 4),
             curve: Curves.easeInOut,
@@ -108,7 +197,7 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
                 end: _gradientEnd,
                 colors: [
                   Colors.black.withOpacity(0.6),
-                  Colors.black.withOpacity(0.2), // Sedikit terang di tengah gerakan
+                  Colors.black.withOpacity(0.2),
                   Colors.black.withOpacity(0.9),
                 ],
               ),
@@ -117,11 +206,11 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
 
           // 3. BLUR FILTER
           BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0), // Blur sedikit dikurangi agar gradient terlihat
+            filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
             child: Container(color: Colors.transparent),
           ),
 
-          // 4. KONTEN UTAMA (SCROLLABLE)
+          // 4. KONTEN UTAMA
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -140,9 +229,13 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
+                              // TOMBOL KEMBALI
                               IconButton(
                                 icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 30),
-                                onPressed: () => Navigator.pop(context),
+                                onPressed: () {
+                                  // Navigasi Pop standar (Animasi slide down otomatis jika dibuka sbg FullscreenDialog)
+                                  Navigator.of(context).pop();
+                                },
                               ),
                               Column(
                                 children: [
@@ -184,13 +277,12 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
-                                    // Shadow yang "bernapas"
                                     BoxShadow(
                                       color: _isPlaying 
-                                          ? Colors.white.withOpacity(0.3) // Warna glow saat play
+                                          ? Colors.white.withOpacity(0.3)
                                           : Colors.black.withOpacity(0.5),
                                       offset: const Offset(0, 20),
-                                      blurRadius: _isPlaying ? _breathingAnimation.value : 30, // Animasi blur
+                                      blurRadius: _isPlaying ? _breathingAnimation.value : 30,
                                       spreadRadius: _isPlaying ? 5 : 5,
                                     ),
                                   ],
@@ -245,11 +337,10 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
                                   ],
                                 ),
                               ),
-                              // Tombol Like dengan Animasi
                               IconButton(
                                 icon: Icon(
                                   _isLiked ? Icons.favorite : Icons.favorite_border,
-                                  color: _isLiked ? const Color(0xFF1DB954) : Colors.white, // Spotify Green jika liked
+                                  color: _isLiked ? const Color(0xFF1DB954) : Colors.white,
                                   size: 30,
                                 ),
                                 onPressed: () {
@@ -261,7 +352,7 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
 
                           const SizedBox(height: 20),
 
-                          // --- Slider & Time ---
+                          // --- Slider & Time Berjalan ---
                           Column(
                             children: [
                               SliderTheme(
@@ -275,10 +366,14 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
                                   trackShape: const RoundedRectSliderTrackShape(),
                                 ),
                                 child: Slider(
-                                  value: _sliderValue,
+                                  value: _position.inSeconds.toDouble(),
                                   min: 0,
-                                  max: 100,
-                                  onChanged: (v) => setState(() => _sliderValue = v),
+                                  max: _duration.inSeconds.toDouble(),
+                                  onChanged: (v) {
+                                    setState(() {
+                                      _position = Duration(seconds: v.toInt());
+                                    });
+                                  },
                                 ),
                               ),
                               Padding(
@@ -286,8 +381,8 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text("0:20", style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
-                                    Text("3:00", style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
+                                    Text(_formatDuration(_position), style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
+                                    Text(_formatDuration(_duration), style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
                                   ],
                                 ),
                               ),
@@ -300,19 +395,22 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
+                              // TOMBOL SHUFFLE
                               IconButton(
                                 icon: const Icon(Icons.shuffle),
-                                color: Colors.white,
+                                color: _isShuffleOn ? const Color(0xFF1DB954) : Colors.white, // Hijau jika aktif
                                 iconSize: 26,
-                                onPressed: () {},
+                                onPressed: _toggleShuffle,
                               ),
                               IconButton(
                                 icon: const Icon(Icons.skip_previous_rounded),
                                 color: Colors.white,
                                 iconSize: 45,
-                                onPressed: () {},
+                                onPressed: () {
+                                  setState(() => _position = Duration.zero);
+                                },
                               ),
-                              // Play Button dengan Scale Animation kecil saat ditekan
+                              // Play Button
                               GestureDetector(
                                 onTap: _togglePlay,
                                 child: AnimatedContainer(
@@ -340,24 +438,34 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
                                 icon: const Icon(Icons.skip_next_rounded),
                                 color: Colors.white,
                                 iconSize: 45,
-                                onPressed: () {},
+                                onPressed: () {
+                                  setState(() {
+                                    _position = Duration.zero;
+                                    _isPlaying = false;
+                                    _breathingController.stop();
+                                    _timer?.cancel();
+                                  });
+                                },
                               ),
+                              // TOMBOL REPEAT
                               IconButton(
-                                icon: const Icon(Icons.repeat),
-                                color: Colors.white,
+                                icon: Icon(
+                                  _repeatMode == 2 ? Icons.repeat_one : Icons.repeat // Ikon berubah saat Repeat One
+                                ),
+                                color: _repeatMode > 0 ? const Color(0xFF1DB954) : Colors.white, // Hijau jika aktif
                                 iconSize: 26,
-                                onPressed: () {},
+                                onPressed: _toggleRepeat,
                               ),
                             ],
                           ),
 
-                          const SizedBox(height: 30), // Bottom padding
+                          const SizedBox(height: 30),
                           
                           // Lyrics Hint
                           Container(
                             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF4C1D95).withOpacity(0.3), // Ungu transparan
+                              color: const Color(0xFF4C1D95).withOpacity(0.3),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
@@ -384,7 +492,3 @@ class _TrackDetailScreenState extends State<TrackDetailScreen> with TickerProvid
     );
   }
 }
-
-
-
-// tester update
