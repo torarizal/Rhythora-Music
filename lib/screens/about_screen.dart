@@ -495,7 +495,7 @@ class _DeveloperCard3DState extends State<DeveloperCard3D> {
                           scale: _isHovered ? 1.1 : 1.0,
                           duration: const Duration(milliseconds: 400),
                           curve: Curves.easeOut,
-                          child: Image.network(
+                          child: Image.asset(
                             widget.imageUrl,
                             fit: BoxFit.cover,
                             errorBuilder: (ctx, _, __) => Container(color: Colors.grey[900], child: const Icon(Icons.person, size: 60, color: Colors.white24)),
