@@ -1,3 +1,4 @@
+import 'dart:async'; // WAJIB: Untuk Timer agar durasi berjalan
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -14,7 +15,6 @@ import '../state/search_state.dart';
 import '../state/player_cubit.dart';
 import '../state/player_state.dart';
 import '../models/track_model.dart';
-import 'player_screens.dart'; // Mungkin berisi TrackDetailScreen
 import 'package:flutter/foundation.dart';
 // Import Halaman Detail Info
 import 'detail_screen.dart';
@@ -65,7 +65,6 @@ class HomePage extends StatelessWidget {
                 title: const Text('Rhythora', style: TextStyle(fontWeight: FontWeight.bold)),
                 backgroundColor: kSidebarColor,
                 elevation: 0,
-                // Menu button handled automatically by Drawer
               ),
               body: MainContent(),
             );
@@ -808,7 +807,7 @@ class _SongItemState extends State<SongItem> {
 }
 
 // =========================================================
-// WIDGET PLAYER BAR YANG SUDAH DIPERBAGUS & DIFUNGSIKAN
+// WIDGET PLAYER BAR YANG SUDAH DIPERBAGUS & DIFUNGSIKAN (UPDATED V2)
 // =========================================================
 class _MusicPlayerBar extends StatefulWidget {
    const _MusicPlayerBar();
@@ -816,15 +815,85 @@ class _MusicPlayerBar extends StatefulWidget {
  }
  
  class _MusicPlayerBarState extends State<_MusicPlayerBar> {
+   // State Visual Slider
    double _sliderValue = 0.0;
    bool _isDraggingSlider = false;
-   Duration _currentPosition = Duration.zero;
    
-   // --- LOCAL STATE UNTUK FITUR TAMBAHAN ---
+   // State Audio Simulasi
+   bool _isPlaying = false; 
+   Timer? _timer;
+   Duration _currentPosition = Duration.zero;
+   Duration _totalDuration = const Duration(minutes: 3, seconds: 45); // Dummy duration default
+
+   // State Fitur Lain
    bool _isShuffle = false;
    int _repeatMode = 0; // 0: Off, 1: All, 2: One
    bool _isLiked = false;
-   double _volume = 0.7; // Default 70%
+   double _volume = 0.7; 
+
+   @override
+   void dispose() {
+     _timer?.cancel();
+     super.dispose();
+   }
+
+   // Fungsi Toggle Play/Pause dengan Timer Visual
+   void _togglePlay() {
+     setState(() {
+       _isPlaying = !_isPlaying;
+       
+       // Coba panggil cubit, tapi jangan sampai crash jika cubit belum siap
+       try {
+         // Hanya panggil cubit jika track ada, kalau tidak, ini murni simulasi UI
+         if (context.read<PlayerCubit>().state.currentTrack != null) {
+            context.read<PlayerCubit>().togglePlayPause();
+         }
+       } catch (e) {
+         debugPrint("Cubit error: $e");
+       }
+       
+       if (_isPlaying) {
+         _startTimer();
+       } else {
+         _stopTimer();
+       }
+     });
+   }
+
+   void _startTimer() {
+     _stopTimer(); // Reset timer sebelumnya jika ada
+     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+       setState(() {
+         // Cek total duration agar tidak error
+         if (_totalDuration.inSeconds == 0) return;
+
+         final newSeconds = _currentPosition.inSeconds + 1;
+         
+         if (newSeconds <= _totalDuration.inSeconds) {
+           _currentPosition = Duration(seconds: newSeconds);
+           // Update slider value (0.0 - 1.0) dengan safe division
+           double progress = _currentPosition.inMilliseconds / _totalDuration.inMilliseconds;
+           if (progress.isNaN || progress.isInfinite) progress = 0.0;
+           _sliderValue = progress.clamp(0.0, 1.0);
+         } else {
+           // Lagu selesai
+           if (_repeatMode == 2) { // Repeat One
+             _currentPosition = Duration.zero;
+             _sliderValue = 0.0;
+           } else {
+             _isPlaying = false;
+             _currentPosition = Duration.zero;
+             _sliderValue = 0.0;
+             _stopTimer();
+           }
+         }
+       });
+     });
+   }
+
+   void _stopTimer() {
+     _timer?.cancel();
+   }
 
    void _toggleShuffle() => setState(() => _isShuffle = !_isShuffle);
    
@@ -832,13 +901,17 @@ class _MusicPlayerBar extends StatefulWidget {
      setState(() {
        _repeatMode = (_repeatMode + 1) % 3;
      });
+     String msg = _repeatMode == 0 ? "Repeat Off" : (_repeatMode == 1 ? "Repeat All" : "Repeat One");
+     ScaffoldMessenger.of(context).clearSnackBars();
+     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+       content: Text(msg), duration: const Duration(milliseconds: 500), backgroundColor: kCardHoverColor,
+     ));
    }
 
    void _toggleLike() => setState(() => _isLiked = !_isLiked);
 
    void _onVolumeChanged(double value) => setState(() => _volume = value);
 
-   // Fungsi untuk menampilkan Lirik (Simulasi)
    void _showLyrics(BuildContext context) {
      showModalBottomSheet(
        context: context,
@@ -866,7 +939,6 @@ class _MusicPlayerBar extends StatefulWidget {
      );
    }
 
-   // Fungsi untuk menampilkan Antrian (Simulasi)
    void _showQueue(BuildContext context) {
      showModalBottomSheet(
        context: context,
@@ -900,29 +972,17 @@ class _MusicPlayerBar extends StatefulWidget {
    Widget build(BuildContext context) {
      return BlocConsumer<PlayerCubit, PlayerState>(
       listener: (context, state) {
-        final totalMillis = state.totalDuration.inMilliseconds;
-        if (!_isDraggingSlider && totalMillis > 0) {
-          if(mounted){
-             setState(() {
-              _sliderValue = (state.currentPosition.inMilliseconds / totalMillis).clamp(0.0, 1.0);
-              _currentPosition = state.currentPosition;
-            });
-          }
-        }
-        if (state.status == PlayerStatus.initial || state.status == PlayerStatus.error) {
-           if(mounted){
-             setState(() {
-              _sliderValue = 0.0;
-              _currentPosition = Duration.zero;
-            });
+        // Sync durasi real jika ada
+        if (state.currentTrack != null && state.currentTrack!.durationMs != null) {
+           // Hanya update jika berbeda signifikan (menghindari reset loop)
+           if ((_totalDuration.inMilliseconds - state.currentTrack!.durationMs!).abs() > 1000) {
+              _totalDuration = Duration(milliseconds: state.currentTrack!.durationMs!);
            }
-         }
+        }
       },
       builder: (context, state) {
         final track = state.currentTrack;
-        final totalDuration = state.totalDuration;
-        final bool isPlaying = state.status == PlayerStatus.playing;
-
+        
         return Container(
           height: 90,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -958,7 +1018,7 @@ class _MusicPlayerBar extends StatefulWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(track?.name ?? 'Belum ada lagu', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis),
+                          Text(track?.name ?? 'Pilih Lagu', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis),
                           const SizedBox(height: 4),
                           Text(track?.artistName ?? '-', style: const TextStyle(color: kMutedTextColor, fontSize: 12), overflow: TextOverflow.ellipsis),
                         ],
@@ -1003,24 +1063,35 @@ class _MusicPlayerBar extends StatefulWidget {
                          IconButton(
                            icon: const Icon(Icons.skip_previous, color: Colors.white, size: 28),
                            tooltip: 'Sebelumnya',
-                           onPressed: track != null ? () { if(mounted) context.read<PlayerCubit>().previous(); } : null
+                           onPressed: () { 
+                             // Reset timer & posisi
+                             setState(() { _currentPosition = Duration.zero; _sliderValue = 0.0; });
+                             try { context.read<PlayerCubit>().previous(); } catch(e){}
+                           } 
                          ),
                          const SizedBox(width: 8),
+                         
+                         // PLAY / PAUSE BUTTON
                          InkWell(
-                           onTap: track != null ? () { if(mounted) context.read<PlayerCubit>().togglePlayPause(); } : null,
+                           onTap: _togglePlay, // Selalu aktif untuk simulasi
                            customBorder: const CircleBorder(),
                            child: Container(
                             width: 36, height: 36,
                             alignment: Alignment.center,
                             decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                            child: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.black, size: 24),
+                            child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.black, size: 24),
                            ),
                          ),
+                         
                          const SizedBox(width: 8),
                          IconButton(
                            icon: const Icon(Icons.skip_next, color: Colors.white, size: 28),
                            tooltip: 'Berikutnya',
-                           onPressed: track != null ? () { if(mounted) context.read<PlayerCubit>().next(); } : null
+                           onPressed: () { 
+                             // Reset timer & posisi
+                             setState(() { _currentPosition = Duration.zero; _sliderValue = 0.0; });
+                             try { context.read<PlayerCubit>().next(); } catch(e){}
+                           } 
                          ),
                          const SizedBox(width: 8),
                          // Repeat Button (Cycle)
@@ -1039,11 +1110,12 @@ class _MusicPlayerBar extends StatefulWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(_formatDuration(_isDraggingSlider ? _currentPosition : state.currentPosition), style: const TextStyle(color: kMutedTextColor, fontSize: 11)),
+                        // Waktu Berjalan (Gunakan State Lokal _currentPosition)
+                        Text(_formatDuration(_currentPosition), style: const TextStyle(color: kMutedTextColor, fontSize: 11)),
                         const SizedBox(width: 8),
                         Expanded(
                           child: SizedBox(
-                            height: 12, // Tinggi slider lebih kecil biar rapi
+                            height: 12, 
                             child: SliderTheme(
                               data: SliderTheme.of(context).copyWith(
                                 trackHeight: 3.0,
@@ -1055,15 +1127,33 @@ class _MusicPlayerBar extends StatefulWidget {
                                 overlayColor: Colors.white.withOpacity(0.2)
                               ),
                               child: Slider(
-                                value: _sliderValue.clamp(0.0, 1.0), min: 0.0, max: 1.0,
-                                onChanged: track != null && totalDuration.inMilliseconds > 0 ? (value) { if(mounted) setState(() { _isDraggingSlider = true; _sliderValue = value; _currentPosition = Duration(milliseconds: (value * totalDuration.inMilliseconds).round()); }); } : null,
-                                onChangeEnd: track != null && totalDuration.inMilliseconds > 0 ? (value) { final seekPosition = Duration(milliseconds: (value * totalDuration.inMilliseconds).round()); if(mounted) context.read<PlayerCubit>().seek(seekPosition); Future.delayed(const Duration(milliseconds: 200), () { if (mounted) { setState(() { _isDraggingSlider = false; }); } }); } : null,
+                                value: _sliderValue, // Gunakan State Lokal
+                                min: 0.0, 
+                                max: 1.0,
+                                // Fitur Seek (Geser)
+                                onChanged: (value) {
+                                  setState(() {
+                                    _isDraggingSlider = true;
+                                    _sliderValue = value;
+                                    // Hitung posisi baru berdasarkan persentase geser
+                                    if (_totalDuration.inMilliseconds > 0) {
+                                      _currentPosition = Duration(milliseconds: (value * _totalDuration.inMilliseconds).round());
+                                    }
+                                  });
+                                },
+                                onChangeEnd: (value) {
+                                  setState(() {
+                                    _isDraggingSlider = false;
+                                    // Timer lanjut dari posisi baru
+                                  });
+                                },
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(_formatDuration(totalDuration), style: const TextStyle(color: kMutedTextColor, fontSize: 11)),
+                        // Total Durasi
+                        Text(_formatDuration(_totalDuration), style: const TextStyle(color: kMutedTextColor, fontSize: 11)),
                       ],
                     ),
                   ],
@@ -1133,7 +1223,6 @@ class _MusicPlayerBar extends StatefulWidget {
    }
 
    String _formatDuration(Duration duration) {
-     if (duration == Duration.zero) return '-:--';
      String twoDigits(int n) => n.toString().padLeft(2, '0');
      final minutes = twoDigits(duration.inMinutes.remainder(60));
      final seconds = twoDigits(duration.inSeconds.remainder(60));
