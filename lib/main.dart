@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Import secure storage
-// --- PERBAIKAN: Tambahkan import HomeScreen ---
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart'; // 1. Import GoRouter
+
+// --- Import Halaman ---
 import 'package:rhythora/screens/splash_screen.dart';
-import 'package:rhythora/state/auth_cubit.dart'; // Import AuthCubitState
+import 'package:rhythora/screens/home_screen.dart';
+import 'package:rhythora/screens/login_screen.dart'; 
+import 'package:rhythora/screens/about_screen.dart'; // Halaman About
+
+// --- Import State Management & Services ---
+import 'package:rhythora/state/auth_cubit.dart';
 import 'package:rhythora/state/home_cubit.dart';
 import 'package:rhythora/state/login_cubit.dart';
 import 'package:rhythora/state/navigation_cubit.dart';
@@ -18,16 +25,39 @@ import 'state/search_cubit.dart';
 const Color kBackgroundColor = Color(0xFF121212);
 const Color kCardBackgroundColor = Color(0xFF1F1F1F);
 const Color kCardBackgroundOpacityColor = Color.fromRGBO(39, 39, 42, 0.7);
-const Color kPrimaryColor = Color(0xFF4F46E5); // Indigo-600
+const Color kPrimaryColor = Color(0xFF4F46E5);
 const Color kTextColor = Colors.white;
-const Color kTextSecondaryColor = Color(0xFFA1A1AA); // zinc-400
-const Color kTextMutedColor = Color(0xFF71717A); // zinc-500
-const Color kBorderColor = Color(0xFF3F3F46); // zinc-700
-const Color kFieldFillColor = Color(0xFF27272A); // zinc-800
+const Color kTextSecondaryColor = Color(0xFFA1A1AA);
+const Color kTextMutedColor = Color(0xFF71717A);
+const Color kBorderColor = Color(0xFF3F3F46);
+const Color kFieldFillColor = Color(0xFF27272A);
 // -----------------------
 
+// 2. Konfigurasi Router
+// Ini mendefinisikan "Peta" URL aplikasi Anda
+final GoRouter _router = GoRouter(
+  initialLocation: '/', // Halaman pertama yang dibuka
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const SplashScreen(),
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/home',
+      builder: (context, state) => const HomePage(),
+    ),
+    GoRoute(
+      path: '/about', // <-- Ini URL untuk About Us
+      builder: (context, state) => const AboutScreen(),
+    ),
+  ],
+);
+
 void main() {
-  // Pastikan Flutter binding siap sebelum mengakses service
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
@@ -37,13 +67,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Sediakan FlutterSecureStorage agar bisa di-inject ke Service
     return RepositoryProvider<FlutterSecureStorage>(
       create: (context) => const FlutterSecureStorage(),
       child: MultiRepositoryProvider(
         providers: [
           RepositoryProvider<AuthService>(
-            // AuthService tidak butuh storage di constructor
             create: (context) => AuthService(),
           ),
           RepositoryProvider<PlayerService>(
@@ -52,25 +80,19 @@ class MyApp extends StatelessWidget {
             ),
           ),
           RepositoryProvider<SpotifyService>(
-             // --- PERBAIKAN 1: Pastikan constructor SpotifyService menerima 2 argumen ---
-             // Jika constructor SpotifyService Anda hanya menerima AuthService, hapus argumen kedua.
-             // Jika constructor butuh keduanya (seperti kode service yang saya berikan), ini sudah benar.
             create: (context) => SpotifyService(
               context.read<AuthService>(),
-              context.read<FlutterSecureStorage>(), // SpotifyService butuh storage
+              context.read<FlutterSecureStorage>(),
             ),
-             // --------------------------------------------------------------------------
           ),
         ],
         child: MultiBlocProvider(
           providers: [
-             BlocProvider<AuthCubit>(
-               create: (context) => AuthCubit(
-                 context.read<AuthService>(),
-               // --- PERBAIKAN 2: Nama fungsi salah ---
-               )..checkInitialAuthStatus(), // Ganti nama fungsinya
-               // ------------------------------------
-             ),
+            BlocProvider<AuthCubit>(
+              create: (context) => AuthCubit(
+                context.read<AuthService>(),
+              )..checkInitialAuthStatus(),
+            ),
             BlocProvider<SearchCubit>(
               create: (context) => SearchCubit(
                 context.read<SpotifyService>(),
@@ -100,14 +122,16 @@ class MyApp extends StatelessWidget {
               create: (context) => NavigationCubit(),
             ),
           ],
-          child: MaterialApp(
+          // 3. Gunakan MaterialApp.router
+          child: MaterialApp.router(
+            routerConfig: _router, // Masukkan konfigurasi router di sini
             title: 'Rhythora',
             debugShowCheckedModeBanner: false,
-            theme: ThemeData( // Tema Anda sudah benar
+            theme: ThemeData(
               brightness: Brightness.dark,
               scaffoldBackgroundColor: kBackgroundColor,
               primaryColor: kPrimaryColor,
-              fontFamily: 'Inter', // Pastikan font ada di pubspec.yaml
+              fontFamily: 'Inter',
               textTheme: const TextTheme(
                 bodyMedium: TextStyle(color: kTextColor),
               ),
@@ -152,7 +176,7 @@ class MyApp extends StatelessWidget {
                 ),
               ),
             ),
-             home: const SplashScreen(),
+            // Hapus properti 'home:', karena sudah digantikan oleh routerConfig
           ),
         ),
       ),
