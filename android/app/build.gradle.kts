@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -20,25 +19,47 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.rhythora"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // ========================================================
+        // <--- TAMBAHAN PENTING (WAJIB ADA UNTUK SPOTIFY SDK)
+        // ========================================================
+        manifestPlaceholders["redirectSchemeName"] = "com.example.rhythora"
+        manifestPlaceholders["redirectHostName"] = "callback"
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true // Ini mengaktifkan R8
+            isShrinkResources = true 
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro" // <-- Ini memanggil file langkah 2
+            )
         }
+    }
+
+    // Tambahan agar tidak error jika ada peringatan kecil (Lint)
+    lintOptions {
+        isCheckReleaseBuilds = false
+        isAbortOnError = false
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Bagian ini sudah BENAR
+    implementation(project(":spotify-app-remote"))
+    implementation("com.fasterxml.jackson.core:jackson-core:2.13.4")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.13.4")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:2.13.4")
+    implementation("com.google.code.gson:gson:2.10.1") // Jaga-jaga butuh Gson juga
 }
