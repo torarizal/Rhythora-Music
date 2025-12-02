@@ -74,14 +74,14 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> with TickerPr
     },
     {
       "name": "Hafiyyan Lintang Arizaki",
-      "role": "Frontend Engineer",
+      "role": "Frontend Developer",
       "image": "assets/images/lintang.jpeg",
       "githubUrl": "https://github.com/hafiyyanlintang",
       "instagramUrl": "https://www.instagram.com/hafiarizaki/",
     },
     {
       "name": "Farid Ade Novian",
-      "role": "Backend Engineer",
+      "role": "Fronted Developer",
       "image": "assets/images/farid.jpeg",
       "githubUrl": "https://github.com/fnovians",
       "instagramUrl": "https://www.instagram.com/fnovian_/",
@@ -95,7 +95,7 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> with TickerPr
     },
     {
       "name": "Aurora Ilmannafia",
-      "role": "Mobile Developer",
+      "role": "UI/UX Designer",
       "image": "assets/images/aurora.jpeg",
       "githubUrl": "https://github.com/auroranafia",
       "instagramUrl": "https://www.instagram.com/auroraanafia/",
@@ -109,7 +109,7 @@ class _RythoraAboutContentState extends State<RythoraAboutContent> with TickerPr
     },
     {
       "name": "Kirana Shofa Dzakiyyah",
-      "role": "DevOps Engineer",
+      "role": "QA Enginer",
       "image": "assets/images/kirana.jpeg",
       "githubUrl": "https://github.com/KirshX07",
       "instagramUrl": "https://www.instagram.com/kiranx_00/",
